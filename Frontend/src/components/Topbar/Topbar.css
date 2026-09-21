@@ -1,0 +1,81 @@
+.topbar {
+  display: flex;
+  height: 64px;
+  align-items: center;
+  gap: 22px;
+  padding: 0 26px;
+  background: rgba(255, 255, 255, 0.94);
+  border-bottom: 1px solid #e4eaf2;
+}
+
+.topbar h2 {
+  flex: 1;
+  margin: 0;
+  color: #111827;
+  font-size: 16px;
+  font-weight: 800;
+}
+
+.topbar__menu,
+.topbar__admin {
+  display: inline-flex;
+  align-items: center;
+  border: 0;
+  background: transparent;
+  color: #101827;
+  cursor: pointer;
+}
+
+.topbar__menu {
+  width: 34px;
+  height: 34px;
+  justify-content: center;
+  padding: 0;
+}
+
+.topbar__menu svg {
+  width: 24px;
+  height: 24px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-width: 2.3;
+}
+
+.topbar__admin {
+  gap: 8px;
+  padding: 0;
+  font-size: 13px;
+}
+
+.topbar__admin strong {
+  font-weight: 800;
+}
+
+.topbar__admin svg {
+  width: 15px;
+  height: 15px;
+  fill: none;
+  stroke: #64748b;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.4;
+}
+
+.topbar__avatar {
+  width: 31px;
+  height: 31px;
+  border: 3px solid #e6edf6;
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 50% 34%, #e6b07f 0 20%, transparent 21%),
+    radial-gradient(circle at 50% 28%, #1f2937 0 20%, transparent 21%),
+    radial-gradient(ellipse at 50% 96%, #2563eb 0 42%, transparent 43%),
+    #dbeafe;
+}
+
+@media (max-width: 760px) {
+  .topbar {
+    padding: 0 16px;
+  }
+}
