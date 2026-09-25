@@ -1,44 +1,61 @@
-import AppLayout from '../../components/AppLayout/AppLayout'
-import './CaptureFace.css'
+const saveFace = async () => {
+  if (!selectedStudent) {
+    setStudentError('Please select a student first.')
+    return
+  }
 
-function CaptureFace({ onNavigate }) {
-  return (
-    <AppLayout activePage="Capture Face" onNavigate={onNavigate}>
-      <section className="page-body capture-face-page">
-        <div className="page-card capture-camera-card">
-          <h1>
-            Capturing Image for: <span>Anjali Sharma (101)</span>
-          </h1>
-          <div className="capture-preview">
-            <div className="capture-face-box"></div>
-          </div>
-          <button className="stop-capture-button" type="button">
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M7 8h10a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2Z" />
-              <path d="m9 8 1.5-3h3L15 8" />
-              <circle cx="12" cy="13.5" r="2.4" />
-            </svg>
-            Stop Capture
-          </button>
-        </div>
+  if (!capturedImage) {
+    setCameraError('Please capture a face first.')
+    return
+  }
 
-        <div className="page-card capture-gallery-card">
-          <h2>Captured Images (12 / 50)</h2>
-          <div className="capture-thumbs">
-            {Array.from({ length: 14 }, (_, index) => (
-              <div className="capture-thumb" key={index}></div>
-            ))}
-          </div>
-          <div className="capture-progress-row">
-            <div className="capture-progress">
-              <span></span>
-            </div>
-            <strong>12 / 50 images captured</strong>
-          </div>
-        </div>
-      </section>
-    </AppLayout>
-  )
+  try {
+    // Convert captured image to Blob
+    const imageResponse = await fetch(capturedImage)
+    const blob = await imageResponse.blob()
+
+    // Create FormData
+    const formData = new FormData()
+
+    formData.append(
+      'face_image',
+      blob,
+      'face.jpg'
+    )
+
+    // Send image to Django
+    const saveResponse = await fetch(
+      `http://127.0.0.1:8000/api/students/${selectedStudent}/save-face/`,
+      {
+        method: 'POST',
+        body: formData,
+      }
+    )
+
+    const data = await saveResponse.json()
+
+    if (!saveResponse.ok) {
+      throw new Error(
+        data.error || 'Failed to save face.'
+      )
+    }
+
+    // Success
+    alert(
+      `Face saved successfully for ${data.student.name} (${data.student.roll_number})`
+    )
+
+    // Reset
+    setCapturedImage(null)
+    setSelectedStudent('')
+    setStudentError('')
+    setCameraError('')
+
+  } catch (error) {
+    console.error('Save face error:', error)
+
+    setStudentError(
+      error.message || 'Unable to save face.'
+    )
+  }
 }
-
-export default CaptureFace
