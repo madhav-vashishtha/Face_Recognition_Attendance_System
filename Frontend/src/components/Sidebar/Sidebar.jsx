@@ -11,6 +11,7 @@ const navItems = [
       </svg>
     ),
   },
+
   {
     label: 'Add Student',
     icon: (
@@ -22,6 +23,7 @@ const navItems = [
       </svg>
     ),
   },
+
   {
     label: 'Capture Face',
     icon: (
@@ -33,19 +35,7 @@ const navItems = [
       </svg>
     ),
   },
-  {
-    label: 'Train Model',
-    icon: (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M12 3v3" />
-        <path d="M12 18v3" />
-        <path d="M3 12h3" />
-        <path d="M18 12h3" />
-        <circle cx="12" cy="12" r="5" />
-        <circle cx="12" cy="12" r="1" />
-      </svg>
-    ),
-  },
+
   {
     label: 'Take Attendance',
     icon: (
@@ -57,17 +47,7 @@ const navItems = [
       </svg>
     ),
   },
-  {
-    label: 'Attendance Report',
-    icon: (
-      <svg viewBox="0 0 24 24" aria-hidden="true">
-        <path d="M7 3h10l3 3v15H4V3h3Z" />
-        <path d="M8 13h8" />
-        <path d="M8 17h8" />
-        <path d="M8 9h4" />
-      </svg>
-    ),
-  },
+
   {
     label: 'Logout',
     icon: (
@@ -80,41 +60,103 @@ const navItems = [
   },
 ]
 
-function Sidebar({ active = 'Dashboard', onNavigate }) {
+
+function Sidebar({
+  active = 'Dashboard',
+  onNavigate
+}) {
+
   return (
+
     <aside className="sidebar">
+
+      {/* Logo / Brand */}
+
       <div className="sidebar__brand">
+
         <div className="sidebar__logo">
-          <svg viewBox="0 0 24 24" aria-hidden="true">
+
+          <svg
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+
             <path d="M8 3H5a2 2 0 0 0-2 2v3" />
+
             <path d="M16 3h3a2 2 0 0 1 2 2v3" />
+
             <path d="M8 21H5a2 2 0 0 1-2-2v-3" />
+
             <path d="M16 21h3a2 2 0 0 0 2-2v-3" />
-            <circle cx="12" cy="10" r="3" />
+
+            <circle
+              cx="12"
+              cy="10"
+              r="3"
+            />
+
             <path d="M7.5 18a4.8 4.8 0 0 1 9 0" />
+
           </svg>
+
         </div>
+
+
         <div>
-          <strong>Face Recognition</strong>
-          <span>Attendance System</span>
+
+          <strong>
+            Face Recognition
+          </strong>
+
+          <span>
+            Attendance System
+          </span>
+
         </div>
+
       </div>
 
-      <nav className="sidebar__nav" aria-label="Main navigation">
+
+      {/* Navigation */}
+
+      <nav
+        className="sidebar__nav"
+        aria-label="Main navigation"
+      >
+
         {navItems.map((item) => (
+
           <button
-            className={`sidebar__link ${active === item.label ? 'sidebar__link--active' : ''}`}
+            className={
+              `sidebar__link ${
+                active === item.label
+                  ? 'sidebar__link--active'
+                  : ''
+              }`
+            }
             key={item.label}
-            onClick={() => onNavigate?.(item.label)}
+            onClick={() =>
+              onNavigate?.(item.label)
+            }
             type="button"
           >
+
             {item.icon}
-            <span>{item.label}</span>
+
+            <span>
+              {item.label}
+            </span>
+
           </button>
+
         ))}
+
       </nav>
+
     </aside>
+
   )
 }
+
 
 export default Sidebar

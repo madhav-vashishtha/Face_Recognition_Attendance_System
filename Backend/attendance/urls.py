@@ -1,13 +1,54 @@
 from django.urls import path
-from .views import add_student, student_list, save_face
+
+from .views import (
+    student_list,
+    add_student,
+    save_face,
+    mark_attendance,
+    recognize_face,
+    dashboard_data
+)
 
 
 urlpatterns = [
-    path("students/add/", add_student, name="add_student"),
-    path("students/", student_list, name="student_list"),
+
+    # Get all students
     path(
-        "students/<int:student_id>/save-face/",
+        "students/",
+        student_list,
+        name="student_list"
+    ),
+
+    # Add student
+    path(
+        "students/add/",
+        add_student,
+        name="add_student"
+    ),
+
+    # Save face
+    path(
+        "students/save-face/",
         save_face,
         name="save_face"
+    ),
+
+    # Attendance
+    path(
+    "attendance/mark/",
+    mark_attendance,
+    name="mark_attendance"
+    ),
+
+    path(
+    "attendance/recognize/",
+    recognize_face,
+    name="recognize_face"
+    ),
+
+    path(
+    "dashboard/",
+    dashboard_data,
+    name="dashboard_data"
     ),
 ]
