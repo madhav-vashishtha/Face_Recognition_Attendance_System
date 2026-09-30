@@ -151,6 +151,30 @@ function TakeAttendance({ onNavigate }) {
     )
   }
 
+// =========================
+// Format Time - 12 Hour
+// =========================
+
+const formatTime = (time) => {
+  if (!time) {
+    return '-'
+  }
+
+  const [hours, minutes, seconds] = time.split(':')
+
+  const hour = Number(hours)
+
+  const hour12 = hour % 12 || 12
+
+  const period = hour >= 12 ? 'PM' : 'AM'
+
+  return (
+    `${String(hour12).padStart(2, '0')}:` +
+    `${minutes}:` +
+    `${seconds.split('.')[0]} ` +
+    `${period}`
+  )
+}
   // =========================
   // Recognize Face
   // =========================
@@ -428,7 +452,7 @@ function TakeAttendance({ onNavigate }) {
 
                 <p>
                   Time:{' '}
-                  {attendanceResult.attendance.time}
+                  {formatTime(attendanceResult.attendance.time)}
                 </p>
 
                 <p>

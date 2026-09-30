@@ -62,7 +62,13 @@ class Attendance(models.Model):
         max_length=20,
         default="Present"
     )
-
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                fields=["student", "date"],
+                name="unique_student_attendance_per_day"
+            )
+        ]
     def __str__(self):
         return f"{self.student.name} - {self.date} - {self.status}"
         
