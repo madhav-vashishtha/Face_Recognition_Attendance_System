@@ -95,6 +95,20 @@
   background: linear-gradient(135deg, #6657ff 0%, #4d3df0 100%);
 }
 
+.sidebar__badge {
+  margin-left: auto;
+  display: grid;
+  place-items: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  background: #ea580c;
+  color: #ffffff;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
 @media (max-width: 760px) {
   .sidebar {
     padding: 18px 10px;
@@ -105,7 +119,7 @@
   }
 
   .sidebar__brand > div:last-child,
-  .sidebar__link span {
+  .sidebar__link-text {
     display: none;
   }
 

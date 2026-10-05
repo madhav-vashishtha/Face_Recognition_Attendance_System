@@ -516,6 +516,14 @@ function Dashboard({ onNavigate }) {
                     </th>
 
                     <th>
+                      Subject
+                    </th>
+
+                    <th>
+                      Section
+                    </th>
+
+                    <th>
                       Time
                     </th>
 
@@ -546,7 +554,17 @@ function Dashboard({ onNavigate }) {
                         </td>
 
                         <td>
-                          {formatTime(attendance.time)}
+                          {attendance.subject}
+                        </td>
+
+                        <td>
+                          {attendance.section}
+                        </td>
+
+                        <td>
+                          {formatTime(attendance.start_time)}
+                          {' - '}
+                          {formatTime(attendance.end_time)}
                         </td>
 
                         <td>

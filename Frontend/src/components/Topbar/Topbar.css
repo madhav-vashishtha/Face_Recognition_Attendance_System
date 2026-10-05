@@ -2,35 +2,44 @@
   display: flex;
   height: 64px;
   align-items: center;
+  justify-content: space-between;
   gap: 22px;
   padding: 0 26px;
   background: rgba(255, 255, 255, 0.94);
   border-bottom: 1px solid #e4eaf2;
+  position: relative;
+  z-index: 100;
+}
+
+.topbar__left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
 }
 
 .topbar h2 {
-  flex: 1;
   margin: 0;
   color: #111827;
-  font-size: 16px;
-  font-weight: 800;
+  font-size: 18px;
+  font-weight: 900;
 }
 
-.topbar__menu,
-.topbar__admin {
+.topbar__right {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.topbar__menu {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
   border: 0;
   background: transparent;
   color: #101827;
   cursor: pointer;
-}
-
-.topbar__menu {
-  width: 34px;
-  height: 34px;
-  justify-content: center;
-  padding: 0;
 }
 
 .topbar__menu svg {
@@ -42,36 +51,183 @@
   stroke-width: 2.3;
 }
 
+/* Bell Notification Button */
+.topbar__notif {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  color: #475569;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.topbar__notif:hover {
+  background: #f1f5f9;
+  color: #1e293b;
+}
+
+.topbar__notif svg {
+  width: 20px;
+  height: 20px;
+}
+
+.topbar__notif-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  display: grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  background: #ea580c;
+  color: #ffffff;
+  border-radius: 9px;
+  font-size: 11px;
+  font-weight: 900;
+  border: 2px solid #ffffff;
+  animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.1); }
+}
+
+/* User Menu & Dropdown */
+.topbar__user-wrap {
+  position: relative;
+}
+
 .topbar__admin {
-  gap: 8px;
-  padding: 0;
-  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  padding: 5px 12px;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.15s ease;
 }
 
-.topbar__admin strong {
-  font-weight: 800;
-}
-
-.topbar__admin svg {
-  width: 15px;
-  height: 15px;
-  fill: none;
-  stroke: #64748b;
-  stroke-linecap: round;
-  stroke-linejoin: round;
-  stroke-width: 2.4;
+.topbar__admin:hover {
+  background: #f1f5f9;
 }
 
 .topbar__avatar {
-  width: 31px;
-  height: 31px;
-  border: 3px solid #e6edf6;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
   border-radius: 50%;
-  background:
-    radial-gradient(circle at 50% 34%, #e6b07f 0 20%, transparent 21%),
-    radial-gradient(circle at 50% 28%, #1f2937 0 20%, transparent 21%),
-    radial-gradient(ellipse at 50% 96%, #2563eb 0 42%, transparent 43%),
-    #dbeafe;
+  background: linear-gradient(135deg, #2563eb, #6366f1);
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.topbar__user-info {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.topbar__user-info strong {
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 900;
+  line-height: 1.1;
+}
+
+.topbar__role-tag {
+  font-size: 9px;
+  font-weight: 900;
+  padding: 1px 6px;
+  border-radius: 4px;
+  margin-top: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.topbar__role-tag--admin {
+  background: #fee2e2;
+  color: #991b1b;
+}
+
+.topbar__role-tag--teacher {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.topbar__role-tag--student {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.topbar__admin svg {
+  width: 14px;
+  height: 14px;
+  stroke: #64748b;
+  stroke-width: 2.5;
+}
+
+/* Dropdown Window */
+.topbar__dropdown {
+  position: absolute;
+  top: 50px;
+  right: 0;
+  width: 220px;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.15);
+  padding: 8px;
+  z-index: 1000;
+}
+
+.topbar__dropdown-header {
+  padding: 10px;
+  border-bottom: 1px solid #f1f5f9;
+  margin-bottom: 6px;
+}
+
+.topbar__dropdown-header p {
+  margin: 0;
+  font-size: 11px;
+  color: #64748b;
+  font-weight: 700;
+}
+
+.topbar__dropdown-header strong {
+  display: block;
+  color: #0f172a;
+  font-size: 13px;
+  font-weight: 800;
+  word-break: break-all;
+}
+
+.topbar__dropdown-item {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: #dc2626;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 800;
+  text-align: left;
+  cursor: pointer;
+}
+
+.topbar__dropdown-item:hover {
+  background: #fef2f2;
 }
 
 @media (max-width: 760px) {

@@ -2,6 +2,16 @@ import { useEffect, useRef, useState } from 'react'
 import AppLayout from '../../components/AppLayout/AppLayout'
 import './TakeAttendance.css'
 
+const subjectOptions = [
+  'Data Structures',
+  'Database Management System',
+  'Operating System',
+  'Computer Networks',
+  'Software Engineering',
+  'Artificial Intelligence',
+  'Machine Learning',
+]
+
 function TakeAttendance({ onNavigate }) {
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
@@ -16,6 +26,68 @@ function TakeAttendance({ onNavigate }) {
 
   const [isCameraStarted, setIsCameraStarted] = useState(false)
   const [isRecognizing, setIsRecognizing] = useState(false)
+  const [activeLecture, setActiveLecture] = useState(null)
+  const [selectedSubject, setSelectedSubject] = useState(subjectOptions[0])
+
+  const formatInputDate = (date) => {
+    return date.toLocaleDateString(
+      'en-CA'
+    )
+  }
+
+  const formatInputTime = (date) => {
+    return date.toTimeString().slice(0, 5)
+  }
+
+  const buildLecturePayload = () => {
+    const now = new Date()
+    const end = new Date(
+      now.getTime() + 60 * 60 * 1000
+    )
+    const endTime =
+      formatInputDate(end) === formatInputDate(now)
+        ? formatInputTime(end)
+        : '23:59'
+
+    return {
+      subject: selectedSubject,
+      section: 'General',
+      date: formatInputDate(now),
+      start_time: formatInputTime(now),
+      end_time: endTime,
+      created_by: 'Madhav',
+    }
+  }
+
+  const ensureLecture = async () => {
+    const response = await fetch(
+      'http://127.0.0.1:8000/api/lectures/',
+      {
+        method: 'POST',
+
+        headers: {
+          'Content-Type': 'application/json',
+        },
+
+        body: JSON.stringify(
+          buildLecturePayload()
+        ),
+      }
+    )
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      throw new Error(
+        data.error ||
+        'Unable to create lecture.'
+      )
+    }
+
+    setActiveLecture(data.lecture)
+
+    return data.lecture
+  }
 
   // =========================
   // Start Camera
@@ -26,6 +98,7 @@ function TakeAttendance({ onNavigate }) {
       setCameraError('')
       setAttendanceMessage('')
       setAttendanceResult(null)
+      setActiveLecture(null)
 
       const stream =
         await navigator.mediaDevices.getUserMedia({
@@ -49,6 +122,7 @@ function TakeAttendance({ onNavigate }) {
       console.error('Camera error:', error)
 
       setCameraError(
+        error.message ||
         'Unable to access the camera. Please allow camera permission.'
       )
     }
@@ -160,6 +234,16 @@ const formatTime = (time) => {
     return '-'
   }
 
+  if (time.includes('T')) {
+    return new Date(time).toLocaleTimeString(
+      'en-IN',
+      {
+        hour: '2-digit',
+        minute: '2-digit',
+      }
+    )
+  }
+
   const [hours, minutes, seconds] = time.split(':')
 
   const hour = Number(hours)
@@ -175,6 +259,22 @@ const formatTime = (time) => {
     `${period}`
   )
 }
+
+const formatDate = (date) => {
+  if (!date) {
+    return '-'
+  }
+
+  return new Date(date).toLocaleDateString(
+    'en-IN',
+    {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    }
+  )
+}
+
   // =========================
   // Recognize Face
   // =========================
@@ -206,6 +306,10 @@ const formatTime = (time) => {
         'Scanning face...'
       )
 
+      const lecture =
+        activeLecture ||
+        await ensureLecture()
+
       const response = await fetch(
         'http://127.0.0.1:8000/api/attendance/recognize/',
         {
@@ -217,6 +321,7 @@ const formatTime = (time) => {
 
           body: JSON.stringify({
             face_image: faceImage,
+            lecture_id: lecture.id,
           }),
         }
       )
@@ -343,6 +448,36 @@ const formatTime = (time) => {
     >
       <section className="page-body take-attendance-page">
 
+        {!isCameraStarted &&
+          !attendanceResult && (
+
+          <div className="lecture-selector">
+
+            <label className="lecture-field">
+              <span>Subject</span>
+
+              <select
+                value={selectedSubject}
+                onChange={(event) => {
+                  setSelectedSubject(event.target.value)
+                  setActiveLecture(null)
+                }}
+              >
+                {subjectOptions.map((subject) => (
+                  <option
+                    value={subject}
+                    key={subject}
+                  >
+                    {subject}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+          </div>
+
+        )}
+
         {/* =========================
             Camera
         ========================= */}
@@ -447,12 +582,32 @@ const formatTime = (time) => {
               <>
                 <p>
                   Date:{' '}
-                  {attendanceResult.attendance.date}
+                  {formatDate(
+                    attendanceResult.attendance.lecture?.date
+                  )}
+                </p>
+
+                <p>
+                  Subject:{' '}
+                  {attendanceResult.attendance.lecture?.subject}
                 </p>
 
                 <p>
                   Time:{' '}
-                  {formatTime(attendanceResult.attendance.time)}
+                  {formatTime(
+                    attendanceResult.attendance.lecture?.start_time
+                  )}
+                  {' - '}
+                  {formatTime(
+                    attendanceResult.attendance.lecture?.end_time
+                  )}
+                </p>
+
+                <p>
+                  Marked At:{' '}
+                  {formatTime(
+                    attendanceResult.attendance.marked_at
+                  )}
                 </p>
 
                 <p>
@@ -548,7 +703,7 @@ const formatTime = (time) => {
             Click Start Attendance.
             The system will automatically
             recognize your face and mark
-            attendance.
+            attendance for this lecture.
 
           </p>
 

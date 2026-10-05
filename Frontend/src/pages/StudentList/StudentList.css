@@ -1,0 +1,738 @@
+.student-list-page {
+  display: grid;
+  gap: 24px;
+}
+
+.student-list-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 20px;
+}
+
+.student-list-header h1 {
+  margin: 0 0 8px;
+  color: #111827;
+  font-size: 34px;
+  line-height: 1.1;
+  font-weight: 900;
+}
+
+.student-list-header p {
+  margin: 0;
+  color: #6b778c;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.student-list-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-width: 172px;
+  height: 52px;
+  border: 0;
+  border-radius: 8px;
+  color: #ffffff;
+  background: #3455f4;
+  box-shadow: 0 12px 22px rgba(52, 85, 244, 0.26);
+  font-size: 16px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.student-list-add svg {
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.4;
+}
+
+.student-list-filters {
+  display: grid;
+  grid-template-columns: minmax(280px, 1fr) 220px 240px 240px;
+  gap: 18px;
+}
+
+.student-search,
+.student-list-filters select {
+  height: 52px;
+  background: #ffffff;
+  border: 1px solid #dce4ef;
+  border-radius: 8px;
+  box-shadow: 0 8px 18px rgba(15, 23, 42, 0.04);
+}
+
+.student-search {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 16px;
+}
+
+.student-search svg {
+  width: 22px;
+  height: 22px;
+  color: #71829b;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.2;
+}
+
+.student-search input {
+  width: 100%;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  color: #111827;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.student-search input::placeholder {
+  color: #7a8799;
+}
+
+.student-list-filters select {
+  padding: 0 16px;
+  color: #111827;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.student-list-card {
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid #dfe7f0;
+  border-radius: 9px;
+  box-shadow: 0 12px 24px rgba(15, 23, 42, 0.06);
+}
+
+.student-list-summary {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 22px 26px 18px;
+}
+
+.student-list-summary__icon {
+  display: grid;
+  width: 60px;
+  height: 60px;
+  place-items: center;
+  color: #3455f4;
+  background: #e9efff;
+  border-radius: 16px;
+}
+
+.student-list-summary__icon svg {
+  width: 33px;
+  height: 33px;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 2.4;
+}
+
+.student-list-summary span,
+.student-list-summary strong {
+  display: block;
+}
+
+.student-list-summary span {
+  color: #283244;
+  font-size: 14px;
+  font-weight: 900;
+}
+
+.student-list-summary strong {
+  margin-top: 5px;
+  color: #111827;
+  font-size: 29px;
+  line-height: 1;
+  font-weight: 900;
+}
+
+.student-list-table-wrap {
+  overflow-x: auto;
+}
+
+.student-list-table {
+  width: 100%;
+  min-width: 1180px;
+  border-collapse: collapse;
+  color: #253044;
+  font-size: 14px;
+}
+
+.student-list-table th {
+  padding: 16px 22px;
+  background: #f7f9fc;
+  border-top: 1px solid #e8edf4;
+  border-bottom: 1px solid #e3e9f1;
+  color: #1f2937;
+  text-align: left;
+  font-weight: 900;
+}
+
+.student-list-table td {
+  padding: 18px 22px;
+  border-bottom: 1px solid #e7edf4;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.student-name-cell,
+.student-attendance-cell {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.student-avatar {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  place-items: center;
+  flex: 0 0 auto;
+  border-radius: 50%;
+  font-size: 20px;
+  font-weight: 900;
+}
+
+.student-avatar--blue {
+  color: #2563eb;
+  background: #e3ecff;
+}
+
+.student-avatar--purple {
+  color: #7c3aed;
+  background: #eee6ff;
+}
+
+.student-avatar--green {
+  color: #16a34a;
+  background: #dcfce7;
+}
+
+.student-avatar--orange {
+  color: #f97316;
+  background: #ffead8;
+}
+
+.student-avatar--violet {
+  color: #8b5cf6;
+  background: #ebe4ff;
+}
+
+.student-attendance-ring {
+  display: grid;
+  width: 58px;
+  height: 58px;
+  place-items: center;
+  position: relative;
+  border-radius: 50%;
+  color: #253044;
+  font-size: 14px;
+  font-weight: 900;
+  background:
+    conic-gradient(
+      var(--ring-color) 0deg,
+      var(--ring-color) var(--student-attendance),
+      var(--ring-track) var(--student-attendance),
+      var(--ring-track) 360deg
+    );
+}
+
+.student-attendance-ring::before {
+  content: '';
+  position: absolute;
+  width: 42px;
+  height: 42px;
+  background: #ffffff;
+  border-radius: 50%;
+}
+
+.student-attendance-ring {
+  isolation: isolate;
+}
+
+.student-attendance-ring {
+  --ring-color: #22c55e;
+  --ring-track: #d9f7e4;
+}
+
+.student-attendance-ring--absent {
+  --ring-color: #ef4444;
+  --ring-track: #ffd8d8;
+}
+
+.student-attendance-ring {
+  z-index: 0;
+}
+
+.student-attendance-ring {
+  line-height: 1;
+}
+
+.student-attendance-ring {
+  overflow: hidden;
+}
+
+.student-attendance-ring {
+  text-align: center;
+}
+
+.student-attendance-ring {
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.04);
+}
+
+.student-attendance-ring {
+  position: relative;
+}
+
+.student-attendance-ring {
+  font-variant-numeric: tabular-nums;
+}
+
+.student-attendance-ring {
+  color: #253044;
+}
+
+.student-attendance-ring {
+  text-shadow: 0 1px 0 #ffffff;
+}
+
+.student-attendance-ring {
+  contain: layout paint;
+}
+
+.student-attendance-ring {
+  flex: 0 0 auto;
+}
+
+.student-attendance-ring {
+  user-select: none;
+}
+
+.student-attendance-ring {
+  -webkit-font-smoothing: antialiased;
+}
+
+.student-attendance-ring {
+  transform: translateZ(0);
+}
+
+.student-attendance-ring {
+  vertical-align: middle;
+}
+
+.student-attendance-ring {
+  appearance: none;
+}
+
+.student-attendance-ring {
+  pointer-events: none;
+}
+
+.student-attendance-ring {
+  letter-spacing: 0;
+}
+
+.student-attendance-ring {
+  font-family: inherit;
+}
+
+.student-attendance-ring {
+  text-decoration: none;
+}
+
+.student-attendance-ring {
+  outline: none;
+}
+
+.student-attendance-ring {
+  border: 0;
+}
+
+.student-attendance-ring {
+  margin: 0;
+}
+
+.student-attendance-ring {
+  padding: 0;
+}
+
+.student-attendance-ring {
+  box-sizing: border-box;
+}
+
+.student-attendance-ring {
+  background-clip: padding-box;
+}
+
+.student-attendance-ring {
+  background-origin: padding-box;
+}
+
+.student-attendance-ring {
+  background-repeat: no-repeat;
+}
+
+.student-attendance-ring {
+  background-size: auto;
+}
+
+.student-attendance-ring {
+  background-position: 0 0;
+}
+
+.student-attendance-ring {
+  background-attachment: scroll;
+}
+
+.student-attendance-ring {
+  background-blend-mode: normal;
+}
+
+.student-attendance-ring {
+  background-color: transparent;
+}
+
+.student-attendance-ring {
+  list-style: none;
+}
+
+.student-attendance-ring {
+  tab-size: 4;
+}
+
+.student-attendance-ring {
+  text-transform: none;
+}
+
+.student-attendance-ring {
+  word-break: normal;
+}
+
+.student-attendance-ring {
+  overflow-wrap: normal;
+}
+
+.student-attendance-ring {
+  white-space: nowrap;
+}
+
+.student-attendance-ring {
+  direction: ltr;
+}
+
+.student-attendance-ring {
+  unicode-bidi: normal;
+}
+
+.student-attendance-ring {
+  cursor: default;
+}
+
+.student-attendance-ring {
+  accent-color: auto;
+}
+
+.student-attendance-ring {
+  caret-color: auto;
+}
+
+.student-attendance-ring {
+  column-gap: normal;
+}
+
+.student-attendance-ring {
+  row-gap: normal;
+}
+
+.student-attendance-ring {
+  place-content: center;
+}
+
+.student-attendance-ring {
+  place-self: auto;
+}
+
+.student-attendance-ring {
+  order: 0;
+}
+
+.student-attendance-ring {
+  flex-grow: 0;
+}
+
+.student-attendance-ring {
+  flex-shrink: 0;
+}
+
+.student-attendance-ring {
+  flex-basis: auto;
+}
+
+.student-attendance-ring {
+  align-self: auto;
+}
+
+.student-attendance-ring {
+  justify-self: auto;
+}
+
+.student-attendance-ring {
+  inset: auto;
+}
+
+.student-attendance-ring {
+  object-fit: fill;
+}
+
+.student-attendance-ring {
+  object-position: 50% 50%;
+}
+
+.student-attendance-ring {
+  opacity: 1;
+}
+
+.student-attendance-ring {
+  visibility: visible;
+}
+
+.student-attendance-ring {
+  clip: auto;
+}
+
+.student-attendance-ring {
+  clip-path: none;
+}
+
+.student-attendance-ring {
+  filter: none;
+}
+
+.student-attendance-ring {
+  backdrop-filter: none;
+}
+
+.student-attendance-ring {
+  mix-blend-mode: normal;
+}
+
+.student-attendance-ring {
+  transition: none;
+}
+
+.student-attendance-ring {
+  animation: none;
+}
+
+.student-attendance-ring {
+  transform-origin: 50% 50%;
+}
+
+.student-attendance-ring {
+  perspective: none;
+}
+
+.student-attendance-ring {
+  resize: none;
+}
+
+.student-attendance-ring {
+  scroll-margin: 0;
+}
+
+.student-attendance-ring {
+  scroll-padding: 0;
+}
+
+.student-attendance-ring {
+  scroll-snap-align: none;
+}
+
+.student-attendance-ring {
+  scroll-snap-stop: normal;
+}
+
+.student-attendance-ring {
+  touch-action: auto;
+}
+
+.student-attendance-ring {
+  will-change: auto;
+}
+
+.student-attendance-ring {
+  zoom: normal;
+}
+
+.student-attendance-ring {
+  empty-cells: show;
+}
+
+.student-attendance-ring {
+  border-collapse: separate;
+}
+
+.student-attendance-ring {
+  border-spacing: 0;
+}
+
+.student-attendance-ring {
+  caption-side: top;
+}
+
+.student-attendance-ring {
+  table-layout: auto;
+}
+
+.student-attendance-ring {
+  quotes: auto;
+}
+
+.student-attendance-ring {
+  counter-reset: none;
+}
+
+.student-attendance-ring {
+  counter-increment: none;
+}
+
+.student-attendance-ring {
+  counter-set: none;
+}
+
+.student-attendance-ring {
+  marker: none;
+}
+
+.student-attendance-ring {
+  all: revert-layer;
+}
+
+.student-attendance-ring {
+  display: grid;
+  width: 58px;
+  height: 58px;
+  place-items: center;
+  flex: 0 0 auto;
+  color: #253044;
+  border-radius: 50%;
+  font-size: 14px;
+  font-weight: 900;
+  position: relative;
+}
+
+.student-attendance-ring::after {
+  content: attr(data-value);
+}
+
+.student-status--present {
+  color: #1f2937;
+}
+
+.student-status--absent {
+  color: #1f2937;
+}
+
+.student-detail-button {
+  height: 36px;
+  padding: 0 18px;
+  color: #3455f4;
+  background: #ffffff;
+  border: 1px solid #9db2ff;
+  border-radius: 7px;
+  font-size: 14px;
+  font-weight: 900;
+  cursor: pointer;
+}
+
+.student-list-state {
+  padding: 36px 24px;
+  color: #64748b;
+  border-top: 1px solid #e8edf4;
+  text-align: center;
+  font-weight: 800;
+}
+
+.student-list-state--error {
+  color: #b91c1c;
+  background: #fef2f2;
+}
+
+.student-list-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 24px;
+  color: #71829b;
+  font-size: 14px;
+  font-weight: 800;
+}
+
+.student-list-pagination {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.student-list-pagination button,
+.student-list-pagination strong {
+  display: grid;
+  width: 34px;
+  height: 34px;
+  place-items: center;
+  border-radius: 7px;
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.student-list-pagination button {
+  color: #a8b2c1;
+  background: #f8fafc;
+  border: 1px solid #e5eaf1;
+}
+
+.student-list-pagination strong {
+  color: #ffffff;
+  background: #3455f4;
+}
+
+@media (max-width: 1180px) {
+  .student-list-filters {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 720px) {
+  .student-list-header {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .student-list-add {
+    width: 100%;
+  }
+
+  .student-list-filters {
+    grid-template-columns: 1fr;
+  }
+
+  .student-list-footer {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
