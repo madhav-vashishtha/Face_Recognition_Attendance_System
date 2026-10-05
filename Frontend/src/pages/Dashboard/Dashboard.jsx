@@ -109,33 +109,33 @@ function Dashboard({ onNavigate }) {
   }
 
   // =========================
-// Format Time - 12 Hour
-// =========================
+  // Format Time - 12 Hour
+  // =========================
 
-const formatTime = (time) => {
+  const formatTime = (time) => {
 
-  if (!time) {
-    return '-'
+    if (!time) {
+      return '-'
+    }
+
+    const [hours, minutes, seconds] =
+      time.split(':')
+
+    const hour = Number(hours)
+
+    const hour12 =
+      hour % 12 || 12
+
+    const period =
+      hour >= 12 ? 'PM' : 'AM'
+
+    return (
+      `${String(hour12).padStart(2, '0')}:` +
+      `${minutes}:` +
+      `${seconds.split('.')[0]} ` +
+      `${period}`
+    )
   }
-
-  const [hours, minutes, seconds] =
-    time.split(':')
-
-  const hour = Number(hours)
-
-  const hour12 =
-    hour % 12 || 12
-
-  const period =
-    hour >= 12 ? 'PM' : 'AM'
-
-  return (
-    `${String(hour12).padStart(2, '0')}:` +
-    `${minutes}:` +
-    `${seconds.split('.')[0]} ` +
-    `${period}`
-  )
-}
 
   // =========================
   // Data
@@ -322,6 +322,21 @@ const formatTime = (time) => {
 
   function StatCard({ stat }) {
 
+    const handleClick = (event) => {
+      event.preventDefault()
+
+      if (stat.label === 'Total Students') {
+        onNavigate('Add Student')
+      }
+
+      if (
+        stat.label === 'Present Today' ||
+        stat.label === 'Attendance %'
+      ) {
+        onNavigate('Take Attendance')
+      }
+    }
+
     return (
 
       <article className="stat-card">
@@ -346,14 +361,13 @@ const formatTime = (time) => {
 
         </div>
 
-        <a href="#">
+        <a href="#" onClick={handleClick}>
           {stat.link} →
         </a>
 
       </article>
 
     )
-
   }
 
 
@@ -637,9 +651,9 @@ const formatTime = (time) => {
                     {absentToday} (
                     {totalStudents > 0
                       ? (
-                          100 -
-                          attendancePercentage
-                        ).toFixed(2)
+                        100 -
+                        attendancePercentage
+                      ).toFixed(2)
                       : '0.00'}
                     %)
                   </span>

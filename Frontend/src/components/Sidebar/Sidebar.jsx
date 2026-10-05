@@ -128,18 +128,23 @@ function Sidebar({
 
           <button
             className={
-              `sidebar__link ${
-                active === item.label
-                  ? 'sidebar__link--active'
-                  : ''
+              `sidebar__link ${active === item.label
+                ? 'sidebar__link--active'
+                : ''
               }`
             }
             key={item.label}
-            onClick={() =>
+            onClick={() => {
+              if (item.label === 'Logout') {
+                window.location.reload()
+                return
+              }
+
               onNavigate?.(item.label)
-            }
+            }}
             type="button"
           >
+          
 
             {item.icon}
 
