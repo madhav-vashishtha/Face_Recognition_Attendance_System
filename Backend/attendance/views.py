@@ -1229,6 +1229,48 @@ def dashboard_data(request):
     })
 
 
+def link_teacher_to_timetable(user):
+    """
+    Automatically links a Teacher User to Timetable records where teacher_name
+    matches the user's name, username, or faculty profile.
+    No manual timetable assignment required.
+    """
+    if not user:
+        return
+
+    profile = getattr(user, "profile", None)
+    if not profile or profile.role != "teacher":
+        return
+
+    full_name = f"{user.first_name} {user.last_name}".strip().upper()
+    username = user.username.upper()
+
+    if username == "TEACHER":
+        return
+
+    tokens = [t for t in full_name.replace(".", " ").split() if len(t) > 2 and t not in ["MR", "DR", "MS", "PROF", "MRS"]]
+    if not tokens and user.first_name:
+        tokens = [user.first_name.upper()]
+
+    timetables = Timetable.objects.all()
+    for t in timetables:
+        t_name = (t.teacher_name or "").upper()
+        if not t_name:
+            continue
+
+        match = False
+        if full_name and (full_name in t_name or t_name in full_name):
+            match = True
+        elif any(token in t_name for token in tokens):
+            match = True
+        elif username in t_name or t_name.replace(".", "").replace(" ", "").lower() in username.lower():
+            match = True
+
+        if match and t.teacher_id != user.id:
+            t.teacher = user
+            t.save(update_fields=["teacher"])
+
+
 # ==========================================
 # AUTHENTICATION: LOGIN
 # ==========================================
@@ -1273,6 +1315,9 @@ def auth_login(request):
             {"error": f"Account role mismatch: Selected '{requested_role}', but account is registered as '{profile.role}'"},
             status=status.HTTP_403_FORBIDDEN
         )
+
+    if profile.role == "teacher":
+        link_teacher_to_timetable(user)
 
     student_obj = profile.student
     if not student_obj and profile.role == "student":
@@ -1402,6 +1447,9 @@ def auth_signup(request):
         department=department,
         phone=phone
     )
+
+    if role == "teacher":
+        link_teacher_to_timetable(user)
 
     user_data = {
         "id": user.id,
@@ -1580,15 +1628,29 @@ def timetable_list(request):
     # GET ALL TIMETABLE
     # =========================
     if request.method == "GET":
+        user_id = request.GET.get("user_id") or request.GET.get("teacher_id")
 
         timetables = Timetable.objects.filter(
             is_active=True
-        ).select_related(
-            "teacher"
-        ).order_by(
+        ).select_related("teacher").order_by(
             "day_of_week",
             "start_time"
         )
+
+        if user_id:
+            user = User.objects.filter(id=user_id).first()
+            if user:
+                profile = getattr(user, "profile", None)
+                if profile and profile.role == "teacher":
+                    link_teacher_to_timetable(user)
+                    teacher_qs = timetables.filter(
+                        Q(teacher=user) |
+                        Q(teacher_name__icontains=user.first_name) |
+                        Q(teacher_name__icontains=user.last_name) |
+                        Q(teacher_name__icontains=user.username)
+                    )
+                    if teacher_qs.exists():
+                        timetables = teacher_qs
 
         data = [
             timetable_to_dict(timetable)
@@ -1726,8 +1788,9 @@ def timetable_list(request):
 def today_timetable(request):
 
     today = timezone.localdate()
-
     day_number = today.weekday()
+
+    user_id = request.GET.get("user_id") or request.GET.get("teacher_id")
 
     timetables = Timetable.objects.filter(
         day_of_week=day_number,
@@ -1737,6 +1800,21 @@ def today_timetable(request):
     ).order_by(
         "start_time"
     )
+
+    if user_id:
+        user = User.objects.filter(id=user_id).first()
+        if user:
+            profile = getattr(user, "profile", None)
+            if profile and profile.role == "teacher":
+                link_teacher_to_timetable(user)
+                teacher_qs = timetables.filter(
+                    Q(teacher=user) |
+                    Q(teacher_name__icontains=user.first_name) |
+                    Q(teacher_name__icontains=user.last_name) |
+                    Q(teacher_name__icontains=user.username)
+                )
+                if teacher_qs.exists():
+                    timetables = teacher_qs
 
     data = [
         timetable_to_dict(timetable)

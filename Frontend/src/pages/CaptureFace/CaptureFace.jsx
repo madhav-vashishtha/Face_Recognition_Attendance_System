@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import AppLayout from '../../components/AppLayout/AppLayout'
 import './CaptureFace.css'
 
-function CaptureFace({ onNavigate }) {
+function CaptureFace({ onNavigate ,currentUser}) {
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
   const streamRef = useRef(null)
@@ -224,6 +224,7 @@ function CaptureFace({ onNavigate }) {
     <AppLayout
       activePage="Capture Face"
       onNavigate={onNavigate}
+      currentUser={currentUser}
     >
       <section className="page-body capture-face-page">
 

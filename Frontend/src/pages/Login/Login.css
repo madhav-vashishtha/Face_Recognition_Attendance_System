@@ -261,7 +261,8 @@
   letter-spacing: 0.3px;
 }
 
-.auth-field input {
+.auth-field input,
+.auth-select {
   height: 46px;
   padding: 0 16px;
   border: 1.5px solid #cbd5e1;
@@ -270,10 +271,12 @@
   font-weight: 700;
   color: #0f172a;
   outline: none;
+  background: #ffffff;
   transition: all 0.15s ease;
 }
 
-.auth-field input:focus {
+.auth-field input:focus,
+.auth-select:focus {
   border-color: #2563eb;
   box-shadow: 0 0 0 3.5px rgba(37, 99, 235, 0.15);
 }

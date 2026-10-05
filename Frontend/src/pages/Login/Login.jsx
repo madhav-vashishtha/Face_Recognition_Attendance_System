@@ -28,15 +28,25 @@ function Login({ onLoginSuccess }) {
   const [error, setError] = useState('')
   const [message, setMessage] = useState('')
 
+  const FACULTY_LIST = [
+    { username: 'kuldeep', name: 'MR. KULDEEP KUMAR', subject: 'COA' },
+    { username: 'naseem', name: 'DR. NASEEM AHAMAD KHAN', subject: 'MATHS 4' },
+    { username: 'hemlata', name: 'MS. HEMLATA CHAUDHRY', subject: 'DSTL' },
+    { username: 'alok', name: 'MR. ALOK GUPTA', subject: 'DS' },
+    { username: 'shivani', name: 'MS. SHIVANI SARSWAT', subject: 'UHV' },
+    { username: 'gagandeep', name: 'MR. GAGANDEEP SINGH', subject: 'CS' },
+    { username: 'faizan', name: 'DR. FAIZAN NASIR', subject: 'MINI PROJECT' },
+  ]
+
   // Quick Demo Accounts Fill
-  const fillDemoAccount = (demoRole) => {
+  const fillDemoAccount = (demoRole, specificUsername = '') => {
     setRole(demoRole)
     setActiveTab('login')
     setError('')
     if (demoRole === 'student') {
       setLoginForm({ username: '2503400100023', password: 'student123' })
     } else if (demoRole === 'teacher') {
-      setLoginForm({ username: 'teacher', password: 'teacher123' })
+      setLoginForm({ username: specificUsername || 'kuldeep', password: 'teacher123' })
     } else if (demoRole === 'admin') {
       setLoginForm({ username: 'admin', password: 'admin123' })
     }
@@ -229,7 +239,7 @@ function Login({ onLoginSuccess }) {
                 setError('')
               }}
             >
-              Sign In
+               Login 
             </button>
             <button
               type="button"
@@ -376,16 +386,46 @@ function Login({ onLoginSuccess }) {
 
               {/* Teacher specific fields */}
               {role === 'teacher' && (
-                <div className="auth-field">
-                  <label>Department *</label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="e.g. Computer Science & Engineering"
-                    value={signupForm.department}
-                    onChange={(e) => setSignupForm({ ...signupForm, department: e.target.value })}
-                  />
-                </div>
+                <>
+                  <div className="auth-field">
+                    <label>Select Timetable Faculty (Auto-links Lectures)</label>
+                    <select
+                      className="auth-select"
+                      onChange={(e) => {
+                        const val = e.target.value
+                        if (val) {
+                          const fac = FACULTY_LIST.find((f) => f.username === val)
+                          if (fac) {
+                            setSignupForm({
+                              ...signupForm,
+                              name: fac.name,
+                              email: `${fac.username}@gmail.com`,
+                              department: 'Computer Science & Engineering',
+                            })
+                          }
+                        }
+                      }}
+                    >
+                      <option value="">-- Optional: Pick existing Timetable Faculty --</option>
+                      {FACULTY_LIST.map((f) => (
+                        <option key={f.username} value={f.username}>
+                          {f.name} ({f.subject})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div className="auth-field">
+                    <label>Department *</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="e.g. Computer Science & Engineering"
+                      value={signupForm.department}
+                      onChange={(e) => setSignupForm({ ...signupForm, department: e.target.value })}
+                    />
+                  </div>
+                </>
               )}
 
               <div className="auth-field">

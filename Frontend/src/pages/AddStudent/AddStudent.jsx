@@ -12,7 +12,7 @@ const fields = [
   ['Semester', 'semester', 'Enter semester', false],
 ]
 
-function AddStudent({ onNavigate }) {
+function AddStudent({ onNavigate ,currentUser}) {
   const [formData, setFormData] = useState({
     name: '',
     section: '',
@@ -80,7 +80,7 @@ function AddStudent({ onNavigate }) {
   }
 
   return (
-    <AppLayout activePage="Add Student" onNavigate={onNavigate}>
+    <AppLayout activePage="Add Student" onNavigate={onNavigate} currentUser={currentUser}>
       <section className="page-body add-student-page">
 
         <form

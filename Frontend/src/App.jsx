@@ -3,6 +3,7 @@ import Login from './pages/Login/Login'
 import Dashboard from './pages/Dashboard/Dashboard'
 import StudentList from './pages/StudentList/StudentList'
 import StudentDetails from './pages/StudentDetails/StudentDetails'
+import ApplyLeave from './pages/ApplyLeave/ApplyLeave'
 import LeaveRequests from './pages/LeaveRequests/LeaveRequests'
 import AddStudent from './pages/AddStudent/AddStudent'
 import CaptureFace from './pages/CaptureFace/CaptureFace'
@@ -21,6 +22,7 @@ function App() {
   const [activePage, setActivePage] = useState('Dashboard')
   const [selectedStudentId, setSelectedStudentId] = useState(null)
   const [pendingCount, setPendingCount] = useState(0)
+  const [autoOpenLeave, setAutoOpenLeave] = useState(false)
 
   // Fetch pending leaves count for notifications
   const fetchPendingCount = async () => {
@@ -46,9 +48,13 @@ function App() {
     }
   }, [currentUser])
 
-  const handleNavigate = (page, data = null) => {
-    if (page === 'Student Details' && data) {
-      setSelectedStudentId(data)
+  const handleNavigate = (page, data = null, options = {}) => {
+    if (page === 'Student Details') {
+      if (data) setSelectedStudentId(data)
+      if (options?.openLeave) setAutoOpenLeave(true)
+      else setAutoOpenLeave(false)
+    } else {
+      setAutoOpenLeave(false)
     }
     setActivePage(page)
   }
@@ -69,6 +75,19 @@ function App() {
       />
     )
   }
+
+  // Role based access restriction
+  const role = currentUser.role || 'admin'
+  const allowedPages = {
+    admin: ['Dashboard', 'Student List', 'Student Details', 'Leave Requests', 'Add Student', 'Capture Face', 'Take Attendance'],
+    teacher: ['Dashboard', 'Student List', 'Student Details', 'Leave Requests', 'Capture Face', 'Take Attendance'],
+    student: ['Student Details', 'Apply Leave'],
+  }
+
+  const roleAllowed = allowedPages[role] || allowedPages.admin
+  const safeActivePage = roleAllowed.includes(activePage)
+    ? activePage
+    : (role === 'student' ? 'Student Details' : 'Dashboard')
 
   const pages = {
     Dashboard: (
@@ -91,6 +110,13 @@ function App() {
         onNavigate={handleNavigate}
         currentUser={currentUser}
         pendingCount={pendingCount}
+        autoOpenLeave={autoOpenLeave}
+      />
+    ),
+    'Apply Leave': (
+      <ApplyLeave
+        currentUser={currentUser}
+        onNavigate={handleNavigate}
       />
     ),
     'Leave Requests': (
@@ -126,7 +152,7 @@ function App() {
   const defaultPage =
     currentUser.role === 'student' ? pages['Student Details'] : pages['Dashboard']
 
-  return pages[activePage] ?? defaultPage
+  return pages[safeActivePage] ?? defaultPage
 }
 
 export default App

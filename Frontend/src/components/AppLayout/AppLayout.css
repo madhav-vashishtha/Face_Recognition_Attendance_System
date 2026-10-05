@@ -31,6 +31,7 @@
   border: 1px solid #dfe7f0;
   border-radius: 9px;
   box-shadow: 0 10px 20px rgba(15, 23, 42, 0.05);
+  padding: 1rem;
 }
 
 @media (max-width: 760px) {

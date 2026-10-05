@@ -3,7 +3,7 @@ import AppLayout from '../../components/AppLayout/AppLayout'
 import './Dashboard.css'
 
 
-function Dashboard({ onNavigate }) {
+function Dashboard({ onNavigate, currentUser }) {
 
   const [dashboardData, setDashboardData] = useState(null)
   const [todayTimetable, setTodayTimetable] = useState([])
@@ -25,6 +25,8 @@ function Dashboard({ onNavigate }) {
         setLoading(true)
         setError('')
 
+        const userIdParam = currentUser?.id ? `?user_id=${currentUser.id}` : ''
+
         const [
           dashboardResponse,
           timetableResponse
@@ -35,7 +37,7 @@ function Dashboard({ onNavigate }) {
           ),
 
           fetch(
-            'http://127.0.0.1:8000/api/timetable/today/'
+            `http://127.0.0.1:8000/api/timetable/today/${userIdParam}`
           ),
 
         ])
@@ -106,6 +108,7 @@ function Dashboard({ onNavigate }) {
       <AppLayout
         activePage="Dashboard"
         onNavigate={onNavigate}
+        currentUser={currentUser}
       >
 
         <section className="page-body dashboard-body">
@@ -132,6 +135,7 @@ function Dashboard({ onNavigate }) {
       <AppLayout
         activePage="Dashboard"
         onNavigate={onNavigate}
+        currentUser={currentUser}
       >
 
         <section className="page-body dashboard-body">
@@ -543,11 +547,17 @@ function Dashboard({ onNavigate }) {
           <div>
 
             <h1>
-              Welcome back, Admin 👋
+              {currentUser?.role === 'teacher'
+                ? `Welcome back, Prof. ${currentUser?.name || 'Teacher'} 👋`
+                : currentUser?.role === 'admin'
+                ? 'Welcome back, Admin 👋'
+                : `Welcome back, ${currentUser?.name || 'User'} 👋`}
             </h1>
 
             <p>
-              Here's what's happening today.
+              {currentUser?.role === 'teacher'
+                ? 'Here are your scheduled lectures and attendance statistics for today.'
+                : "Here's what's happening across the campus today."}
             </p>
 
           </div>

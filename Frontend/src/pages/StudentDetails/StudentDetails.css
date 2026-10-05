@@ -7,6 +7,7 @@
   flex-direction: column;
   gap: 24px;
   position: relative;
+  margin: 1rem;
 }
 
 /* Toast Message */
@@ -43,10 +44,19 @@
     transform: translateY(-20px);
     opacity: 0;
   }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
+}
+
+.sd-student-portal-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  border: 1px solid #bfdbfe;
+  padding: 8px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 800;
 }
 
 /* Top Action Bar */

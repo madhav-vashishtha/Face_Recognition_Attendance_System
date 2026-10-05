@@ -1,6 +1,7 @@
 import './Sidebar.css'
 
 function Sidebar({ active = 'Dashboard', onNavigate, currentUser, pendingCount = 0 }) {
+  console.log(currentUser,"CURRENT USER")
   const role = currentUser?.role || 'admin'
 
   const allNavItems = [
@@ -24,6 +25,19 @@ function Sidebar({ active = 'Dashboard', onNavigate, currentUser, pendingCount =
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <circle cx="12" cy="12" r="10" />
           <polyline points="12 6 12 12 16 14" />
+        </svg>
+      ),
+    },
+
+    {
+      label: 'Apply Leave',
+      roles: ['student'],
+      icon: (
+        <svg viewBox="0 0 24 24" aria-hidden="true">
+          <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+          <polyline points="14 2 14 8 20 8" />
+          <line x1="16" y1="13" x2="8" y2="13" />
+          <line x1="16" y1="17" x2="8" y2="17" />
         </svg>
       ),
     },
@@ -136,7 +150,7 @@ function Sidebar({ active = 'Dashboard', onNavigate, currentUser, pendingCount =
         {navItems.map((item) => {
           const isItemActive =
             active === item.label ||
-            (item.label === 'Student List' && active === 'Student Details') ||
+            (item.label === 'Student List' && active === 'Student Details' && role !== 'student') ||
             (item.label === 'My Attendance' && active === 'Student Details')
 
           return (
@@ -153,7 +167,7 @@ function Sidebar({ active = 'Dashboard', onNavigate, currentUser, pendingCount =
                 }
 
                 if (item.targetPage) {
-                  onNavigate?.(item.targetPage, currentUser?.student_id)
+                  onNavigate?.(item.targetPage, currentUser?.student_id, { openLeave: Boolean(item.openLeaveModal) })
                 } else {
                   onNavigate?.(item.label)
                 }

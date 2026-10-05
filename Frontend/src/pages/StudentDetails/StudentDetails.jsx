@@ -2,11 +2,15 @@ import { useEffect, useState, useMemo } from 'react'
 import AppLayout from '../../components/AppLayout/AppLayout'
 import './StudentDetails.css'
 
-function StudentDetails({ studentId, onNavigate }) {
+function StudentDetails({ studentId, onNavigate, currentUser, autoOpenLeave = false }) {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [successMessage, setSuccessMessage] = useState('')
+
+  const isStudentRole = currentUser?.role === 'student'
+  const isAdminRole = currentUser?.role === 'admin'
+  const isTeacherRole = currentUser?.role === 'teacher'
 
   // Modals state
   const [isEditModalOpen, setIsEditModalOpen] = useState(false)
@@ -82,7 +86,10 @@ function StudentDetails({ studentId, onNavigate }) {
 
   useEffect(() => {
     fetchStudentData(studentId)
-  }, [studentId])
+    if (autoOpenLeave) {
+      setIsLeaveModalOpen(true)
+    }
+  }, [studentId, autoOpenLeave])
 
   const showNotification = (msg) => {
     setSuccessMessage(msg)
@@ -222,7 +229,7 @@ function StudentDetails({ studentId, onNavigate }) {
   const isGoodStanding = attendancePct >= 75
 
   return (
-    <AppLayout activePage="Student Details" onNavigate={onNavigate}>
+    <AppLayout activePage="Student Details" onNavigate={onNavigate} currentUser={currentUser}>
       <div className="student-details-container">
         {/* Top Notification Toast */}
         {successMessage && (
@@ -236,61 +243,57 @@ function StudentDetails({ studentId, onNavigate }) {
 
         {/* Navigation & Actions Bar */}
         <div className="sd-action-bar">
-          <button
-            type="button"
-            className="sd-back-btn"
-            onClick={() => onNavigate('Student List')}
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M19 12H5" />
-              <path d="M12 19l-7-7 7-7" />
-            </svg>
-            Back to Student List
-          </button>
+          {!isStudentRole ? (
+            <button
+              type="button"
+              className="sd-back-btn"
+              onClick={() => onNavigate('Student List')}
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M19 12H5" />
+                <path d="M12 19l-7-7 7-7" />
+              </svg>
+              Back to Student List
+            </button>
+          ) : (
+            <div className="sd-student-portal-badge">
+              <span>🎓 Student Self-Service Portal</span>
+            </div>
+          )}
 
           <div className="sd-header-actions">
-            <button
-              type="button"
-              className="sd-btn sd-btn--leave"
-              onClick={() => {
-                setFormError('')
-                setIsLeaveModalOpen(true)
-              }}
-            >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
-                <path d="M14 2v6h6" />
-                <path d="M12 18v-6" />
-                <path d="M9 15h6" />
-              </svg>
-              Apply Leave
-            </button>
+       
 
-            <button
-              type="button"
-              className="sd-btn sd-btn--edit"
-              onClick={() => {
-                setFormError('')
-                setIsEditModalOpen(true)
-              }}
-            >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
-              </svg>
-              Edit Student
-            </button>
 
-            <button
-              type="button"
-              className="sd-btn sd-btn--danger"
-              onClick={() => setIsDeleteModalOpen(true)}
-            >
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <polyline points="3 6 5 6 21 6" />
-                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-              </svg>
-              Delete
-            </button>
+            {isAdminRole && (
+              <>
+                <button
+                  type="button"
+                  className="sd-btn sd-btn--edit"
+                  onClick={() => {
+                    setFormError('')
+                    setIsEditModalOpen(true)
+                  }}
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+                  </svg>
+                  Edit Student
+                </button>
+
+                <button
+                  type="button"
+                  className="sd-btn sd-btn--danger"
+                  onClick={() => setIsDeleteModalOpen(true)}
+                >
+                  <svg viewBox="0 0 24 24" aria-hidden="true">
+                    <polyline points="3 6 5 6 21 6" />
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                  </svg>
+                  Delete
+                </button>
+              </>
+            )}
           </div>
         </div>
 
@@ -503,13 +506,13 @@ function StudentDetails({ studentId, onNavigate }) {
                           <th>Lecture</th>
                           <th>Time</th>
                           <th>Status</th>
-                          <th>Quick Action</th>
+                          {!isStudentRole && <th>Quick Action</th>}
                         </tr>
                       </thead>
                       <tbody>
                         {filteredAttendance.length === 0 ? (
                           <tr>
-                            <td colSpan="6" className="sd-table-empty">
+                            <td colSpan={!isStudentRole ? "6" : "5"} className="sd-table-empty">
                               No attendance records found for "{attendanceFilter}".
                             </td>
                           </tr>
@@ -544,40 +547,42 @@ function StudentDetails({ studentId, onNavigate }) {
                                   </span>
                                 )}
                               </td>
-                              <td>
-                                <div className="sd-quick-actions">
-                                  {item.status !== 'Present' && (
-                                    <button
-                                      type="button"
-                                      title="Mark Present"
-                                      className="sd-action-mini sd-action-mini--present"
-                                      onClick={() => handleToggleAttendance(item.lecture_id, 'Present')}
-                                    >
-                                      Present
-                                    </button>
-                                  )}
-                                  {item.status !== 'Late' && (
-                                    <button
-                                      type="button"
-                                      title="Mark Late"
-                                      className="sd-action-mini sd-action-mini--late"
-                                      onClick={() => handleToggleAttendance(item.lecture_id, 'Late')}
-                                    >
-                                      Late
-                                    </button>
-                                  )}
-                                  {item.status !== 'Absent' && (
-                                    <button
-                                      type="button"
-                                      title="Mark Absent"
-                                      className="sd-action-mini sd-action-mini--absent"
-                                      onClick={() => handleToggleAttendance(item.lecture_id, 'Absent')}
-                                    >
-                                      Absent
-                                    </button>
-                                  )}
-                                </div>
-                              </td>
+                              {!isStudentRole && (
+                                <td>
+                                  <div className="sd-quick-actions">
+                                    {item.status !== 'Present' && (
+                                      <button
+                                        type="button"
+                                        title="Mark Present"
+                                        className="sd-action-mini sd-action-mini--present"
+                                        onClick={() => handleToggleAttendance(item.lecture_id, 'Present')}
+                                      >
+                                        Present
+                                      </button>
+                                    )}
+                                    {item.status !== 'Late' && (
+                                      <button
+                                        type="button"
+                                        title="Mark Late"
+                                        className="sd-action-mini sd-action-mini--late"
+                                        onClick={() => handleToggleAttendance(item.lecture_id, 'Late')}
+                                      >
+                                        Late
+                                      </button>
+                                    )}
+                                    {item.status !== 'Absent' && (
+                                      <button
+                                        type="button"
+                                        title="Mark Absent"
+                                        className="sd-action-mini sd-action-mini--absent"
+                                        onClick={() => handleToggleAttendance(item.lecture_id, 'Absent')}
+                                      >
+                                        Absent
+                                      </button>
+                                    )}
+                                  </div>
+                                </td>
+                              )}
                             </tr>
                           ))
                         )}
@@ -602,14 +607,6 @@ function StudentDetails({ studentId, onNavigate }) {
                         <p>Applications, reasons and approval status</p>
                       </div>
                     </div>
-
-                    <button
-                      type="button"
-                      className="sd-btn-link"
-                      onClick={() => setIsLeaveModalOpen(true)}
-                    >
-                      + New Leave
-                    </button>
                   </div>
 
                   <div className="sd-table-wrap">
@@ -788,17 +785,19 @@ function StudentDetails({ studentId, onNavigate }) {
                       </div>
                     )}
 
-                    <button
-                      type="button"
-                      className="sd-btn-bio"
-                      onClick={() => onNavigate('Capture Face')}
-                    >
-                      <svg viewBox="0 0 24 24" aria-hidden="true">
-                        <rect x="4" y="5" width="16" height="14" rx="2" />
-                        <circle cx="12" cy="12" r="3" />
-                      </svg>
-                      {student.has_face ? 'Re-capture Face Biometric' : 'Capture Face Now'}
-                    </button>
+                    {!isStudentRole && (
+                      <button
+                        type="button"
+                        className="sd-btn-bio"
+                        onClick={() => onNavigate('Capture Face')}
+                      >
+                        <svg viewBox="0 0 24 24" aria-hidden="true">
+                          <rect x="4" y="5" width="16" height="14" rx="2" />
+                          <circle cx="12" cy="12" r="3" />
+                        </svg>
+                        {student.has_face ? 'Re-capture Face Biometric' : 'Capture Face Now'}
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
