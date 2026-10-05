@@ -403,3 +403,484 @@
     padding: 10px;
   }
 }
+/* =========================================================
+   TODAY'S TIMETABLE
+========================================================= */
+
+.today-timetable-panel {
+  width: 100%;
+  margin-top: 24px;
+  overflow: hidden;
+}
+
+
+/* =========================
+   Header
+========================= */
+
+.today-timetable-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  padding: 20px 24px;
+
+  border-bottom: 1px solid #e8ecf3;
+}
+
+
+.today-timetable-title {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+
+.today-timetable-icon {
+  width: 44px;
+  height: 44px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 12px;
+
+  background: #eef3ff;
+}
+
+
+.today-timetable-icon svg {
+  width: 23px;
+  height: 23px;
+
+  fill: none;
+  stroke: #3157e8;
+  stroke-width: 1.8;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+
+.today-timetable-title h3 {
+  margin: 0;
+
+  font-size: 18px;
+  font-weight: 700;
+
+  color: #182033;
+}
+
+
+.today-timetable-title p {
+  margin: 4px 0 0;
+
+  font-size: 13px;
+
+  color: #7b8497;
+}
+
+
+.today-timetable-count {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+
+  padding: 8px 13px;
+
+  border-radius: 20px;
+
+  background: #f4f6fa;
+
+  color: #566075;
+}
+
+
+.today-timetable-count strong {
+  font-size: 14px;
+  color: #182033;
+}
+
+
+.today-timetable-count span {
+  font-size: 13px;
+}
+
+
+/* =========================
+   Timetable List
+========================= */
+
+.timetable-list {
+  width: 100%;
+}
+
+
+.timetable-row {
+  display: grid;
+
+  grid-template-columns:
+    150px
+    minmax(170px, 1fr)
+    minmax(220px, 1.2fr)
+    120px
+    150px;
+
+  align-items: center;
+
+  gap: 20px;
+
+  min-height: 82px;
+
+  padding: 14px 24px;
+
+  border-bottom: 1px solid #edf0f5;
+
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+
+.timetable-row:last-child {
+  border-bottom: none;
+}
+
+
+.timetable-row:hover {
+  background: #fafbfe;
+}
+
+
+/* =========================
+   Live Lecture
+========================= */
+
+.timetable-row--live {
+  background: #f5f8ff;
+
+  border-left: 4px solid #3157e8;
+}
+
+
+.timetable-row--live:hover {
+  background: #f1f5ff;
+}
+
+
+/* =========================
+   Time
+========================= */
+
+.timetable-time {
+  display: flex;
+  flex-direction: column;
+
+  gap: 2px;
+}
+
+
+.timetable-time strong {
+  font-size: 14px;
+
+  font-weight: 700;
+
+  color: #182033;
+}
+
+
+.timetable-time span {
+  font-size: 11px;
+
+  color: #98a0b1;
+
+  text-transform: uppercase;
+}
+
+
+/* =========================
+   Subject
+========================= */
+
+.timetable-subject {
+  display: flex;
+  flex-direction: column;
+
+  gap: 5px;
+}
+
+
+.timetable-subject strong {
+  font-size: 15px;
+
+  font-weight: 700;
+
+  color: #182033;
+}
+
+
+.timetable-subject span {
+  font-size: 12px;
+
+  color: #7b8497;
+}
+
+
+/* =========================
+   Teacher
+========================= */
+
+.timetable-teacher {
+  display: flex;
+  flex-direction: column;
+
+  gap: 5px;
+}
+
+
+.timetable-teacher span {
+  font-size: 11px;
+
+  color: #98a0b1;
+
+  text-transform: uppercase;
+
+  letter-spacing: 0.4px;
+}
+
+
+.timetable-teacher strong {
+  font-size: 13px;
+
+  font-weight: 600;
+
+  color: #3c465b;
+}
+
+
+/* =========================
+   Status
+========================= */
+
+.timetable-status {
+  display: inline-flex;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 7px;
+
+  width: fit-content;
+
+  padding: 6px 11px;
+
+  border-radius: 20px;
+
+  font-size: 12px;
+
+  font-weight: 700;
+}
+
+
+.timetable-status--live {
+  color: #176b45;
+
+  background: #e8f8ef;
+}
+
+
+.timetable-status--upcoming {
+  color: #3157e8;
+
+  background: #edf2ff;
+}
+
+
+.timetable-status--completed {
+  color: #70798b;
+
+  background: #f1f3f6;
+}
+
+
+.live-dot {
+  width: 7px;
+  height: 7px;
+
+  border-radius: 50%;
+
+  background: #20b26b;
+
+  animation: livePulse 1.5s infinite;
+}
+
+
+@keyframes livePulse {
+
+  0% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.35;
+  }
+
+  100% {
+    opacity: 1;
+  }
+
+}
+
+
+/* =========================
+   Action
+========================= */
+
+.timetable-action {
+  display: flex;
+
+  justify-content: flex-end;
+
+  align-items: center;
+}
+
+
+.timetable-start-btn {
+  border: none;
+
+  padding: 10px 14px;
+
+  border-radius: 8px;
+
+  background: #3157e8;
+
+  color: white;
+
+  font-size: 12px;
+
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+
+.timetable-start-btn:hover {
+  background: #2448d0;
+
+  transform: translateY(-1px);
+}
+
+
+.timetable-upcoming-text,
+.timetable-completed-text {
+  font-size: 12px;
+
+  font-weight: 600;
+
+  color: #8b93a3;
+}
+
+
+/* =========================
+   Empty
+========================= */
+
+.empty-timetable {
+  min-height: 180px;
+
+  display: flex;
+
+  flex-direction: column;
+
+  align-items: center;
+
+  justify-content: center;
+
+  gap: 7px;
+
+  text-align: center;
+}
+
+
+.empty-timetable-icon {
+  font-size: 30px;
+
+  margin-bottom: 4px;
+}
+
+
+.empty-timetable strong {
+  font-size: 14px;
+
+  color: #252d3d;
+}
+
+
+.empty-timetable span {
+  font-size: 12px;
+
+  color: #8b93a3;
+}
+
+
+/* =========================
+   Responsive
+========================= */
+
+@media (max-width: 1100px) {
+
+  .timetable-row {
+    grid-template-columns:
+      120px
+      1fr
+      1fr;
+
+    gap: 14px;
+  }
+
+
+  .timetable-status {
+    justify-self: start;
+  }
+
+
+  .timetable-action {
+    justify-content: flex-start;
+  }
+
+}
+
+
+@media (max-width: 700px) {
+
+  .today-timetable-header {
+    padding: 16px;
+  }
+
+
+  .timetable-row {
+    grid-template-columns: 1fr;
+
+    padding: 16px;
+  }
+
+
+  .timetable-time {
+    flex-direction: row;
+
+    align-items: center;
+
+    gap: 6px;
+  }
+
+
+  .timetable-action {
+    justify-content: flex-start;
+  }
+
+}

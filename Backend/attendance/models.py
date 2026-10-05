@@ -2,11 +2,19 @@ from django.db import models
 from django.contrib.auth.models import User
 
 
+# =========================================================
+# STUDENT
+# =========================================================
+
 class Student(models.Model):
 
-    name = models.CharField(max_length=100)
+    name = models.CharField(
+        max_length=100
+    )
 
-    section = models.CharField(max_length=50)
+    section = models.CharField(
+        max_length=50
+    )
 
     roll_number = models.CharField(
         max_length=20,
@@ -19,7 +27,9 @@ class Student(models.Model):
         null=True
     )
 
-    branch = models.CharField(max_length=100)
+    branch = models.CharField(
+        max_length=100
+    )
 
     phone = models.CharField(
         max_length=15,
@@ -27,28 +37,153 @@ class Student(models.Model):
         null=True
     )
 
-    semester = models.CharField(max_length=20)
+    semester = models.CharField(
+        max_length=20
+    )
 
-    # Captured face image
     face_image = models.TextField(
         blank=True,
         null=True
     )
 
     face_embedding = models.TextField(
-    blank=True,
-    null=True
+        blank=True,
+        null=True
     )
 
     created_at = models.DateTimeField(
         auto_now_add=True
     )
 
+    def __str__(self):
+        return f"{self.name} - {self.roll_number}"
+
+
+# =========================================================
+# TIMETABLE
+# =========================================================
+
+class Timetable(models.Model):
+
+    DAY_CHOICES = [
+        (0, "Monday"),
+        (1, "Tuesday"),
+        (2, "Wednesday"),
+        (3, "Thursday"),
+        (4, "Friday"),
+        (5, "Saturday"),
+        (6, "Sunday"),
+    ]
+
+    day_of_week = models.PositiveSmallIntegerField(
+        choices=DAY_CHOICES,
+        default=0
+    )
+
+    subject = models.CharField(
+        max_length=100
+    )
+
+    section = models.CharField(
+        max_length=50
+    )
+
+    branch = models.CharField(
+        max_length=100
+    )
+
+    semester = models.CharField(
+        max_length=50
+    )
+
+    start_time = models.TimeField()
+
+    end_time = models.TimeField()
+
+    # Faculty name comes directly from college timetable
+    teacher_name = models.CharField(
+        max_length=150,
+        blank=True,
+        null=True
+    )
+
+    # Optional link to Django User.
+    # This will be connected automatically later.
+    teacher = models.ForeignKey(
+        User,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="timetable_entries"
+    )
+
+    room = models.CharField(
+        max_length=100,
+        blank=True,
+        null=True
+    )
+
+    late_after_minutes = models.PositiveIntegerField(
+        default=10
+    )
+
+    is_active = models.BooleanField(
+        default=True
+    )
+
+    created_at = models.DateTimeField(
+        auto_now_add=True
+    )
+
+    class Meta:
+
+        ordering = [
+            "day_of_week",
+            "start_time"
+        ]
+
+        constraints = [
+            models.UniqueConstraint(
+                fields=[
+                    "day_of_week",
+                    "section",
+                    "branch",
+                    "semester",
+                    "start_time",
+                    "end_time",
+                ],
+                name="unique_timetable_slot",
+            )
+        ]
+
+    def __str__(self):
+
+        teacher = (
+            self.teacher_name
+            or "Teacher not specified"
+        )
+
+        return (
+            f"{self.get_day_of_week_display()} - "
+            f"{self.subject} - "
+            f"{teacher} - "
+            f"{self.start_time} to {self.end_time}"
+        )
+
+
+# =========================================================
+# LECTURE
+# =========================================================
 
 class Lecture(models.Model):
-    subject = models.CharField(max_length=100)
 
-    section = models.CharField(max_length=50)
+    subject = models.CharField(
+        max_length=100
+    )
+
+    section = models.CharField(
+        max_length=50
+    )
 
     date = models.DateField()
 
@@ -67,6 +202,7 @@ class Lecture(models.Model):
     )
 
     class Meta:
+
         constraints = [
             models.UniqueConstraint(
                 fields=[
@@ -81,13 +217,28 @@ class Lecture(models.Model):
         ]
 
     def __str__(self):
+
         return (
-            f"{self.subject} - {self.section} - "
-            f"{self.date} {self.start_time}"
+            f"{self.subject} - "
+            f"{self.section} - "
+            f"{self.date} "
+            f"{self.start_time}"
         )
 
 
+# =========================================================
+# ATTENDANCE
+# =========================================================
+
 class Attendance(models.Model):
+
+    STATUS_CHOICES = [
+        ("Present", "Present"),
+        ("Late", "Late"),
+        ("Absent", "Absent"),
+        ("On Leave", "On Leave"),
+    ]
+
     student = models.ForeignKey(
         Student,
         on_delete=models.CASCADE,
@@ -102,6 +253,7 @@ class Attendance(models.Model):
 
     status = models.CharField(
         max_length=20,
+        choices=STATUS_CHOICES,
         default="Present"
     )
 
@@ -110,21 +262,33 @@ class Attendance(models.Model):
     )
 
     class Meta:
+
         constraints = [
             models.UniqueConstraint(
-                fields=["student", "lecture"],
+                fields=[
+                    "student",
+                    "lecture"
+                ],
                 name="unique_student_attendance_per_lecture"
             )
         ]
 
     def __str__(self):
+
         return (
-            f"{self.student.name} - {self.lecture.subject} - "
-            f"{self.lecture.date} - {self.status}"
+            f"{self.student.name} - "
+            f"{self.lecture.subject} - "
+            f"{self.lecture.date} - "
+            f"{self.status}"
         )
 
 
+# =========================================================
+# LEAVE
+# =========================================================
+
 class Leave(models.Model):
+
     student = models.ForeignKey(
         Student,
         on_delete=models.CASCADE,
@@ -173,13 +337,27 @@ class Leave(models.Model):
     )
 
     class Meta:
-        ordering = ["-applied_at", "-date"]
+
+        ordering = [
+            "-applied_at",
+            "-date"
+        ]
 
     def __str__(self):
-        return f"{self.student.name} - {self.reason} ({self.status})"
 
+        return (
+            f"{self.student.name} - "
+            f"{self.reason} "
+            f"({self.status})"
+        )
+
+
+# =========================================================
+# USER PROFILE
+# =========================================================
 
 class UserProfile(models.Model):
+
     ROLE_CHOICES = (
         ("admin", "Admin"),
         ("teacher", "Teacher"),
@@ -198,6 +376,7 @@ class UserProfile(models.Model):
         default="student"
     )
 
+    # Only used for student accounts
     student = models.OneToOneField(
         Student,
         on_delete=models.SET_NULL,
@@ -219,4 +398,8 @@ class UserProfile(models.Model):
     )
 
     def __str__(self):
-        return f"{self.user.username} ({self.role})"
+
+        return (
+            f"{self.user.username} "
+            f"({self.role})"
+        )

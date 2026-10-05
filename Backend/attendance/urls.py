@@ -15,7 +15,14 @@ from .views import (
     auth_signup,
     leave_requests_list,
     leave_action,
-    pending_leaves_count
+    pending_leaves_count,
+    # Timetable
+    timetable_list,
+    today_timetable,
+    current_timetable,
+    current_lecture,
+    start_attendance,
+    finalize_lecture,
 )
 
 
@@ -97,4 +104,39 @@ urlpatterns = [
     dashboard_data,
     name="dashboard_data"
     ),
+
+    # Timetable
+path(
+    "timetable/",
+    timetable_list,
+    name="timetable_list"
+),
+
+path(
+    "timetable/today/",
+    today_timetable,
+    name="today_timetable"
+),
+
+path(
+    "timetable/current/",
+    current_timetable,
+    name="current_timetable"
+),
+
+path(
+    "timetable/current-lecture/",
+    current_lecture,
+    name="current_lecture"
+),
+path(
+    "attendance/start/",
+    start_attendance,
+    name="start_attendance"
+),
+path(
+    "attendance/finalize/",
+    finalize_lecture,
+    name="finalize_lecture"
+),
 ]

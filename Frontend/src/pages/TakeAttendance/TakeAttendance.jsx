@@ -2,16 +2,6 @@ import { useEffect, useRef, useState } from 'react'
 import AppLayout from '../../components/AppLayout/AppLayout'
 import './TakeAttendance.css'
 
-const subjectOptions = [
-  'Data Structures',
-  'Database Management System',
-  'Operating System',
-  'Computer Networks',
-  'Software Engineering',
-  'Artificial Intelligence',
-  'Machine Learning',
-]
-
 function TakeAttendance({ onNavigate }) {
   const videoRef = useRef(null)
   const canvasRef = useRef(null)
@@ -26,79 +16,112 @@ function TakeAttendance({ onNavigate }) {
 
   const [isCameraStarted, setIsCameraStarted] = useState(false)
   const [isRecognizing, setIsRecognizing] = useState(false)
+
   const [activeLecture, setActiveLecture] = useState(null)
-  const [selectedSubject, setSelectedSubject] = useState(subjectOptions[0])
+  const [recognizedStudents, setRecognizedStudents] = useState([])
 
-  const formatInputDate = (date) => {
-    return date.toLocaleDateString(
-      'en-CA'
-    )
-  }
+  // ==========================================
+  // Format Time - 12 Hour
+  // ==========================================
 
-  const formatInputTime = (date) => {
-    return date.toTimeString().slice(0, 5)
-  }
-
-  const buildLecturePayload = () => {
-    const now = new Date()
-    const end = new Date(
-      now.getTime() + 60 * 60 * 1000
-    )
-    const endTime =
-      formatInputDate(end) === formatInputDate(now)
-        ? formatInputTime(end)
-        : '23:59'
-
-    return {
-      subject: selectedSubject,
-      section: 'General',
-      date: formatInputDate(now),
-      start_time: formatInputTime(now),
-      end_time: endTime,
-      created_by: 'Madhav',
+  const formatTime = (time) => {
+    if (!time) {
+      return '-'
     }
-  }
 
-  const ensureLecture = async () => {
-    const response = await fetch(
-      'http://127.0.0.1:8000/api/lectures/',
-      {
-        method: 'POST',
-
-        headers: {
-          'Content-Type': 'application/json',
-        },
-
-        body: JSON.stringify(
-          buildLecturePayload()
-        ),
-      }
-    )
-
-    const data = await response.json()
-
-    if (!response.ok) {
-      throw new Error(
-        data.error ||
-        'Unable to create lecture.'
+    if (time.includes('T')) {
+      return new Date(time).toLocaleTimeString(
+        'en-IN',
+        {
+          hour: '2-digit',
+          minute: '2-digit',
+        }
       )
     }
 
-    setActiveLecture(data.lecture)
+    const [hours, minutes, seconds = '00'] = time.split(':')
 
-    return data.lecture
+    const hour = Number(hours)
+    const hour12 = hour % 12 || 12
+    const period = hour >= 12 ? 'PM' : 'AM'
+
+    return (
+      `${String(hour12).padStart(2, '0')}:` +
+      `${minutes} ` +
+      `${period}`
+    )
   }
 
-  // =========================
-  // Start Camera
-  // =========================
+  // ==========================================
+  // Format Date
+  // ==========================================
 
-  const startCamera = async () => {
+  const formatDate = (date) => {
+    if (!date) {
+      return '-'
+    }
+
+    return new Date(date).toLocaleDateString(
+      'en-IN',
+      {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+      }
+    )
+  }
+
+  // ==========================================
+  // Get Current Lecture + Start Attendance
+  // ==========================================
+
+  const startAttendance = async () => {
     try {
       setCameraError('')
       setAttendanceMessage('')
       setAttendanceResult(null)
-      setActiveLecture(null)
+      setRecognizedStudents([])
+
+      // --------------------------------------
+      // Ask backend for current timetable lecture
+      // --------------------------------------
+
+      const response = await fetch(
+        'http://127.0.0.1:8000/api/attendance/start/',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+        }
+      )
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(
+          data.error ||
+          data.message ||
+          'Unable to start attendance.'
+        )
+      }
+
+      if (!data.active || !data.lecture) {
+        throw new Error(
+          'No lecture is running right now.'
+        )
+      }
+
+      // Save current lecture
+      setActiveLecture(data.lecture)
+
+      setAttendanceMessage(
+        `Attendance started for ${data.lecture.subject}`
+      )
+
+      // --------------------------------------
+      // Start camera
+      // --------------------------------------
 
       const stream =
         await navigator.mediaDevices.getUserMedia({
@@ -109,7 +132,6 @@ function TakeAttendance({ onNavigate }) {
             height: {
               ideal: 720,
             },
-            facingMode: 'user',
           },
           audio: false,
         })
@@ -119,18 +141,21 @@ function TakeAttendance({ onNavigate }) {
       setIsCameraStarted(true)
 
     } catch (error) {
-      console.error('Camera error:', error)
+      console.error(
+        'Start attendance error:',
+        error
+      )
 
       setCameraError(
         error.message ||
-        'Unable to access the camera. Please allow camera permission.'
+        'Unable to start attendance.'
       )
     }
   }
 
-  // =========================
-  // Attach camera stream
-  // =========================
+  // ==========================================
+  // Attach Camera Stream
+  // ==========================================
 
   useEffect(() => {
     if (
@@ -152,12 +177,11 @@ function TakeAttendance({ onNavigate }) {
     }
   }, [isCameraStarted])
 
-  // =========================
-  // Stop Camera
-  // =========================
+  // ==========================================
+  // Stop Camera Only
+  // ==========================================
 
-  const stopCamera = () => {
-    // Stop scanning
+  const stopCameraOnly = () => {
     if (scanIntervalRef.current) {
       clearInterval(
         scanIntervalRef.current
@@ -166,7 +190,6 @@ function TakeAttendance({ onNavigate }) {
       scanIntervalRef.current = null
     }
 
-    // Stop camera
     if (streamRef.current) {
       streamRef.current
         .getTracks()
@@ -175,7 +198,6 @@ function TakeAttendance({ onNavigate }) {
       streamRef.current = null
     }
 
-    // Remove video stream
     if (videoRef.current) {
       videoRef.current.srcObject = null
     }
@@ -186,9 +208,89 @@ function TakeAttendance({ onNavigate }) {
     setIsCameraStarted(false)
   }
 
-  // =========================
+  // ==========================================
+  // Finish / Finalize Lecture
+  // ==========================================
+
+  const finishAttendance = async () => {
+    if (!activeLecture?.id) {
+      stopCameraOnly()
+
+      setAttendanceMessage(
+        'No active lecture found.'
+      )
+
+      return
+    }
+
+    try {
+      setAttendanceMessage(
+        'Finalizing attendance...'
+      )
+
+      // Stop scanning and camera
+      stopCameraOnly()
+
+      // --------------------------------------
+      // Mark remaining students Absent / Leave
+      // --------------------------------------
+
+      const response = await fetch(
+        'http://127.0.0.1:8000/api/attendance/finalize/',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            lecture_id: activeLecture.id,
+          }),
+        }
+      )
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        throw new Error(
+          data.error ||
+          data.message ||
+          'Unable to finalize attendance.'
+        )
+      }
+
+      setAttendanceMessage(
+        'Attendance completed successfully.'
+      )
+
+      setAttendanceResult({
+        type: 'finalized',
+        message:
+          data.message ||
+          'Attendance completed successfully.',
+        absent_count:
+          data.absent_count || 0,
+        leave_count:
+          data.leave_count || 0,
+        recognized_count:
+          recognizedStudents.length,
+      })
+
+    } catch (error) {
+      console.error(
+        'Finalize attendance error:',
+        error
+      )
+
+      setCameraError(
+        error.message ||
+        'Unable to finalize attendance.'
+      )
+    }
+  }
+
+  // ==========================================
   // Capture Camera Frame
-  // =========================
+  // ==========================================
 
   const captureFrame = () => {
     const video = videoRef.current
@@ -211,6 +313,10 @@ function TakeAttendance({ onNavigate }) {
     const context =
       canvas.getContext('2d')
 
+    if (!context) {
+      return null
+    }
+
     context.drawImage(
       video,
       0,
@@ -221,71 +327,25 @@ function TakeAttendance({ onNavigate }) {
 
     return canvas.toDataURL(
       'image/jpeg',
-      0.9
+      0.85
     )
   }
 
-// =========================
-// Format Time - 12 Hour
-// =========================
-
-const formatTime = (time) => {
-  if (!time) {
-    return '-'
-  }
-
-  if (time.includes('T')) {
-    return new Date(time).toLocaleTimeString(
-      'en-IN',
-      {
-        hour: '2-digit',
-        minute: '2-digit',
-      }
-    )
-  }
-
-  const [hours, minutes, seconds] = time.split(':')
-
-  const hour = Number(hours)
-
-  const hour12 = hour % 12 || 12
-
-  const period = hour >= 12 ? 'PM' : 'AM'
-
-  return (
-    `${String(hour12).padStart(2, '0')}:` +
-    `${minutes}:` +
-    `${seconds.split('.')[0]} ` +
-    `${period}`
-  )
-}
-
-const formatDate = (date) => {
-  if (!date) {
-    return '-'
-  }
-
-  return new Date(date).toLocaleDateString(
-    'en-IN',
-    {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-    }
-  )
-}
-
-  // =========================
+  // ==========================================
   // Recognize Face
-  // =========================
+  // ==========================================
 
   const recognizeFace = async () => {
-    // Prevent multiple requests at same time
+    // Prevent overlapping requests
     if (recognizingRef.current) {
       return
     }
 
     if (!isCameraStarted) {
+      return
+    }
+
+    if (!activeLecture?.id) {
       return
     }
 
@@ -297,18 +357,12 @@ const formatDate = (date) => {
       const faceImage = captureFrame()
 
       if (!faceImage) {
-        recognizingRef.current = false
-        setIsRecognizing(false)
         return
       }
 
       setAttendanceMessage(
-        'Scanning face...'
+        'Scanning classroom...'
       )
-
-      const lecture =
-        activeLecture ||
-        await ensureLecture()
 
       const response = await fetch(
         'http://127.0.0.1:8000/api/attendance/recognize/',
@@ -321,45 +375,84 @@ const formatDate = (date) => {
 
           body: JSON.stringify({
             face_image: faceImage,
-            lecture_id: lecture.id,
+            lecture_id: activeLecture.id,
           }),
         }
       )
 
-      const data =
-        await response.json()
+      const data = await response.json()
 
-      // =========================
-      // Face recognized
-      // =========================
+      // ======================================
+      // Face recognized / Attendance marked
+      // ======================================
 
       if (response.ok) {
-        setAttendanceResult(data)
+        const student = data.student
 
-        setAttendanceMessage(
-          data.message
-        )
+        if (student) {
+          setRecognizedStudents((previous) => {
+            const alreadyExists =
+              previous.some(
+                (item) =>
+                  item.id === student.id
+              )
 
-        stopCamera()
+            if (alreadyExists) {
+              return previous
+            }
 
+            return [
+              ...previous,
+              {
+                id: student.id,
+                name: student.name,
+                roll_number:
+                  student.roll_number,
+                status:
+                  data.attendance?.status ||
+                  'Present',
+              },
+            ]
+          })
+
+          setAttendanceMessage(
+            `${student.name} - ${
+              data.attendance?.status ||
+              'Present'
+            }`
+          )
+
+          // Show latest recognition
+          setAttendanceResult({
+            type: 'recognized',
+            message: data.message,
+            student: student,
+            attendance:
+              data.attendance || null,
+          })
+        }
+
+        // IMPORTANT:
+        // Camera does NOT stop here.
+        // It continues scanning.
         return
       }
 
-      // =========================
-      // Face not recognized yet
-      // =========================
+      // ======================================
+      // Face not recognized
+      // ======================================
 
       if (response.status === 404) {
         setAttendanceMessage(
-          'Looking for a face...'
+          'Looking for faces...'
         )
 
         return
       }
 
-      // =========================
+      // ======================================
       // Other error
-      // =========================
+      // ======================================
 
       throw new Error(
         data.error ||
@@ -374,7 +467,8 @@ const formatDate = (date) => {
       )
 
       setAttendanceMessage(
-        error.message
+        error.message ||
+        'Face recognition failed.'
       )
 
     } finally {
@@ -384,19 +478,22 @@ const formatDate = (date) => {
     }
   }
 
-  // =========================
+  // ==========================================
   // Automatic Face Scanning
-  // =========================
+  // ==========================================
 
   useEffect(() => {
-    if (!isCameraStarted) {
+    if (
+      !isCameraStarted ||
+      !activeLecture
+    ) {
       return
     }
 
-    // First scan after camera has started
+    // First scan after 2 seconds
     const firstScan = setTimeout(() => {
       recognizeFace()
-    }, 1500)
+    }, 2000)
 
     // Continue scanning every 3 seconds
     scanIntervalRef.current =
@@ -415,11 +512,14 @@ const formatDate = (date) => {
         scanIntervalRef.current = null
       }
     }
-  }, [isCameraStarted])
+  }, [
+    isCameraStarted,
+    activeLecture,
+  ])
 
-  // =========================
+  // ==========================================
   // Cleanup
-  // =========================
+  // ==========================================
 
   useEffect(() => {
     return () => {
@@ -437,9 +537,9 @@ const formatDate = (date) => {
     }
   }, [])
 
-  // =========================
+  // ==========================================
   // UI
-  // =========================
+  // ==========================================
 
   return (
     <AppLayout
@@ -448,39 +548,50 @@ const formatDate = (date) => {
     >
       <section className="page-body take-attendance-page">
 
-        {!isCameraStarted &&
-          !attendanceResult && (
+        {/* =====================================
+            Lecture Information
+        ===================================== */}
 
-          <div className="lecture-selector">
+        {activeLecture && (
+          <div className="page-card lecture-info-card">
 
-            <label className="lecture-field">
-              <span>Subject</span>
+            <h2>
+              {activeLecture.subject}
+            </h2>
 
-              <select
-                value={selectedSubject}
-                onChange={(event) => {
-                  setSelectedSubject(event.target.value)
-                  setActiveLecture(null)
-                }}
-              >
-                {subjectOptions.map((subject) => (
-                  <option
-                    value={subject}
-                    key={subject}
-                  >
-                    {subject}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <p>
+              Section: {activeLecture.section}
+            </p>
+
+            <p>
+              Date:{' '}
+              {formatDate(
+                activeLecture.date
+              )}
+            </p>
+
+            <p>
+              Time:{' '}
+              {formatTime(
+                activeLecture.start_time
+              )}
+              {' - '}
+              {formatTime(
+                activeLecture.end_time
+              )}
+            </p>
+
+            <p>
+              Students recognized:{' '}
+              {recognizedStudents.length}
+            </p>
 
           </div>
-
         )}
 
-        {/* =========================
+        {/* =====================================
             Camera
-        ========================= */}
+        ===================================== */}
 
         {isCameraStarted && (
           <div className="attendance-camera">
@@ -499,18 +610,21 @@ const formatDate = (date) => {
               <span className="scanning-dot"></span>
 
               {isRecognizing
-                ? 'Scanning Face...'
+                ? 'Scanning Classroom...'
                 : 'Camera Ready'}
 
             </div>
 
-            {/* Face Oval */}
+            {/* Face Box */}
 
             <div className="attendance-face-box">
 
               <span className="face-corner top-left"></span>
+
               <span className="face-corner top-right"></span>
+
               <span className="face-corner bottom-left"></span>
+
               <span className="face-corner bottom-right"></span>
 
             </div>
@@ -521,14 +635,16 @@ const formatDate = (date) => {
 
               <span>●</span>
 
-              Look directly at the camera
+              Camera is scanning the classroom
 
             </div>
 
           </div>
         )}
 
-        {/* Hidden Canvas */}
+        {/* =====================================
+            Hidden Canvas
+        ===================================== */}
 
         <canvas
           ref={canvasRef}
@@ -537,9 +653,9 @@ const formatDate = (date) => {
           }}
         />
 
-        {/* =========================
+        {/* =====================================
             Camera Error
-        ========================= */}
+        ===================================== */}
 
         {cameraError && (
           <p className="attendance-error">
@@ -547,11 +663,12 @@ const formatDate = (date) => {
           </p>
         )}
 
-        {/* =========================
-            Attendance Result
-        ========================= */}
+        {/* =====================================
+            Latest Recognition
+        ===================================== */}
 
-        {attendanceResult && (
+        {attendanceResult?.type ===
+          'recognized' && (
           <aside className="page-card attendance-result-card">
 
             <p className="attendance-success">
@@ -581,38 +698,21 @@ const formatDate = (date) => {
             {attendanceResult.attendance && (
               <>
                 <p>
-                  Date:{' '}
-                  {formatDate(
-                    attendanceResult.attendance.lecture?.date
-                  )}
-                </p>
-
-                <p>
-                  Subject:{' '}
-                  {attendanceResult.attendance.lecture?.subject}
-                </p>
-
-                <p>
-                  Time:{' '}
-                  {formatTime(
-                    attendanceResult.attendance.lecture?.start_time
-                  )}
-                  {' - '}
-                  {formatTime(
-                    attendanceResult.attendance.lecture?.end_time
-                  )}
+                  Status:{' '}
+                  {
+                    attendanceResult
+                      .attendance
+                      .status
+                  }
                 </p>
 
                 <p>
                   Marked At:{' '}
                   {formatTime(
-                    attendanceResult.attendance.marked_at
+                    attendanceResult
+                      .attendance
+                      .marked_at
                   )}
-                </p>
-
-                <p>
-                  Status:{' '}
-                  {attendanceResult.attendance.status}
                 </p>
               </>
             )}
@@ -620,11 +720,97 @@ const formatDate = (date) => {
           </aside>
         )}
 
-        {/* =========================
+        {/* =====================================
+            Finalized Result
+        ===================================== */}
+
+        {attendanceResult?.type ===
+          'finalized' && (
+          <aside className="page-card attendance-result-card">
+
+            <p className="attendance-success">
+
+              <span>
+                <svg
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <path d="m6 12 4 4 8-8" />
+                </svg>
+              </span>
+
+              {attendanceResult.message}
+
+            </p>
+
+            <h1>
+              Attendance Completed
+            </h1>
+
+            <p>
+              Recognized:{' '}
+              {attendanceResult.recognized_count}
+            </p>
+
+            <p>
+              Absent:{' '}
+              {attendanceResult.absent_count}
+            </p>
+
+            <p>
+              On Leave:{' '}
+              {attendanceResult.leave_count}
+            </p>
+
+          </aside>
+        )}
+
+        {/* =====================================
+            Recognized Students
+        ===================================== */}
+
+        {recognizedStudents.length > 0 && (
+          <div className="page-card">
+
+            <h2>
+              Students Recognized
+            </h2>
+
+            {recognizedStudents.map(
+              (student) => (
+                <div
+                  key={student.id}
+                  style={{
+                    display: 'flex',
+                    justifyContent:
+                      'space-between',
+                    padding: '10px 0',
+                    borderBottom:
+                      '1px solid #eee',
+                  }}
+                >
+                  <span>
+                    {student.name} -{' '}
+                    {student.roll_number}
+                  </span>
+
+                  <strong>
+                    {student.status}
+                  </strong>
+                </div>
+              )
+            )}
+
+          </div>
+        )}
+
+        {/* =====================================
             Buttons
-        ========================= */}
+        ===================================== */}
 
         <div className="attendance-actions">
+
+          {/* Start */}
 
           {!isCameraStarted &&
             !attendanceResult && (
@@ -632,7 +818,7 @@ const formatDate = (date) => {
             <button
               className="start-attendance-button"
               type="button"
-              onClick={startCamera}
+              onClick={startAttendance}
             >
 
               <svg
@@ -658,26 +844,49 @@ const formatDate = (date) => {
 
           )}
 
+          {/* Finish */}
+
           {isCameraStarted && (
 
             <button
               className="stop-camera-button"
               type="button"
-              onClick={stopCamera}
+              onClick={finishAttendance}
             >
-              Stop Camera
+              Finish Attendance
+            </button>
+
+          )}
+
+          {/* New Attendance */}
+
+          {!isCameraStarted &&
+            attendanceResult && (
+
+            <button
+              className="start-attendance-button"
+              type="button"
+              onClick={() => {
+                setAttendanceResult(null)
+                setAttendanceMessage('')
+                setCameraError('')
+                setActiveLecture(null)
+                setRecognizedStudents([])
+              }}
+            >
+              Start New Attendance
             </button>
 
           )}
 
         </div>
 
-        {/* =========================
+        {/* =====================================
             Message
-        ========================= */}
+        ===================================== */}
 
         {attendanceMessage &&
-          !attendanceResult && (
+          !attendanceResult?.type && (
 
           <p className="attendance-note">
 
@@ -689,9 +898,9 @@ const formatDate = (date) => {
 
         )}
 
-        {/* =========================
+        {/* =====================================
             Information
-        ========================= */}
+        ===================================== */}
 
         {!isCameraStarted &&
           !attendanceResult && (
@@ -702,8 +911,8 @@ const formatDate = (date) => {
 
             Click Start Attendance.
             The system will automatically
-            recognize your face and mark
-            attendance for this lecture.
+            detect the current lecture from
+            the timetable and scan students.
 
           </p>
 

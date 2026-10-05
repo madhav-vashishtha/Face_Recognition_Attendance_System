@@ -11,7 +11,7 @@ from rest_framework.response import Response
 from rest_framework import status
 
 from django.contrib.auth.models import User
-from .models import Student, Lecture, Attendance, Leave, UserProfile
+from .models import Student, Lecture, Attendance, Leave, UserProfile , Timetable
 from .face_recognition import get_face_embedding
 
 
@@ -724,11 +724,285 @@ def mark_attendance(request):
 
 # ==========================================
 # RECOGNIZE FACE AND MARK ATTENDANCE
-# ==========================================
-
 @api_view(["POST"])
 def recognize_face(request):
 
+    face_image = request.data.get("face_image")
+
+    # --------------------------------------
+    # Get lecture automatically or by ID
+    # --------------------------------------
+
+    lecture_id = request.data.get("lecture_id")
+
+    if lecture_id:
+        lecture, lecture_error = get_lecture_from_request(request)
+
+        if lecture_error:
+            return lecture_error
+
+    else:
+        lecture = get_or_create_current_lecture()
+
+        if not lecture:
+            return Response(
+                {
+                    "error": "No lecture is running right now."
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+    # --------------------------------------
+    # Check face image
+    # --------------------------------------
+
+    if not face_image:
+        return Response(
+            {
+                "error": "Face image is required"
+            },
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # --------------------------------------
+    # Generate embedding from camera image
+    # --------------------------------------
+
+    try:
+        current_embedding = get_face_embedding(face_image)
+
+    except ValueError as error:
+        return Response(
+            {
+                "error": str(error)
+            },
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # --------------------------------------
+    # Compare with saved student embeddings
+    # --------------------------------------
+
+    best_student = None
+    best_similarity = -1.0
+
+    students = Student.objects.exclude(
+        face_embedding__isnull=True
+    ).exclude(
+        face_embedding=""
+    )
+
+    for student in students:
+
+        try:
+            saved_embedding = np.array(
+                json.loads(student.face_embedding),
+                dtype=np.float32
+            )
+
+            current = np.array(
+                current_embedding,
+                dtype=np.float32
+            )
+
+            # Cosine similarity
+            denominator = (
+                np.linalg.norm(current)
+                * np.linalg.norm(saved_embedding)
+            )
+
+            if denominator == 0:
+                continue
+
+            similarity = float(
+                np.dot(current, saved_embedding)
+                / denominator
+            )
+
+            if similarity > best_similarity:
+                best_similarity = similarity
+                best_student = student
+
+        except Exception as error:
+            print(
+                f"Embedding error for student {student.id}:",
+                error
+            )
+
+    # --------------------------------------
+    # Recognition threshold
+    # --------------------------------------
+
+    RECOGNITION_THRESHOLD = 0.45
+
+    if (
+        best_student is None
+        or best_similarity < RECOGNITION_THRESHOLD
+    ):
+        return Response(
+            {
+                "message": "Face not recognized",
+                "similarity": round(
+                    best_similarity,
+                    4
+                )
+            },
+            status=status.HTTP_404_NOT_FOUND
+        )
+
+    # --------------------------------------
+    # Check duplicate attendance
+    # --------------------------------------
+
+    existing_attendance = Attendance.objects.filter(
+        student=best_student,
+        lecture=lecture
+    ).first()
+
+    if existing_attendance:
+
+        return Response(
+            {
+                "message": "Attendance already marked for this lecture",
+                "student": {
+                    "id": best_student.id,
+                    "name": best_student.name,
+                    "roll_number": best_student.roll_number
+                },
+                "similarity": round(
+                    best_similarity,
+                    4
+                ),
+                "attendance": attendance_to_dict(
+                    existing_attendance
+                )
+            },
+            status=status.HTTP_200_OK
+        )
+
+    # --------------------------------------
+    # Find matching timetable
+    # --------------------------------------
+
+    timetable = Timetable.objects.filter(
+        day_of_week=lecture.date.weekday(),
+        subject=lecture.subject,
+        section=lecture.section,
+        start_time=lecture.start_time,
+        end_time=lecture.end_time,
+        is_active=True
+    ).first()
+
+    # --------------------------------------
+    # Check approved leave
+    # --------------------------------------
+
+    approved_leave = Leave.objects.filter(
+        student=best_student,
+        date=lecture.date,
+        status="Approved"
+    ).filter(
+        Q(subject__isnull=True)
+        | Q(subject="")
+        | Q(subject="All Subjects")
+        | Q(subject=lecture.subject)
+    ).first()
+
+    if approved_leave:
+
+        attendance = Attendance.objects.create(
+            student=best_student,
+            lecture=lecture,
+            status="On Leave"
+        )
+
+        return Response(
+            {
+                "message": "Student is on approved leave",
+                "student": {
+                    "id": best_student.id,
+                    "name": best_student.name,
+                    "roll_number": best_student.roll_number
+                },
+                "similarity": round(
+                    best_similarity,
+                    4
+                ),
+                "status": "On Leave",
+                "attendance": attendance_to_dict(
+                    attendance
+                )
+            },
+            status=status.HTTP_200_OK
+        )
+
+    # --------------------------------------
+    # Calculate Present / Late
+    # --------------------------------------
+
+    now = timezone.localtime()
+
+    lecture_start = timezone.make_aware(
+        datetime.datetime.combine(
+            lecture.date,
+            lecture.start_time
+        )
+    )
+
+    late_after_minutes = 10
+
+    if timetable:
+        late_after_minutes = timetable.late_after_minutes
+
+    late_time = (
+        lecture_start
+        + datetime.timedelta(
+            minutes=late_after_minutes
+        )
+    )
+
+    if now <= late_time:
+        attendance_status = "Present"
+    else:
+        attendance_status = "Late"
+
+    # --------------------------------------
+    # Create attendance
+    # --------------------------------------
+
+    attendance = Attendance.objects.create(
+        student=best_student,
+        lecture=lecture,
+        status=attendance_status
+    )
+
+    # --------------------------------------
+    # Success response
+    # --------------------------------------
+
+    return Response(
+        {
+            "message": "Attendance marked successfully",
+
+            "student": {
+                "id": best_student.id,
+                "name": best_student.name,
+                "roll_number": best_student.roll_number
+            },
+
+            "similarity": round(
+                best_similarity,
+                4
+            ),
+
+            "status": attendance_status,
+
+            "attendance": attendance_to_dict(
+                attendance
+            )
+        },
+        status=status.HTTP_200_OK
+    )
     face_image = request.data.get("face_image")
     lecture, lecture_error = get_lecture_from_request(
         request
@@ -1274,3 +1548,447 @@ def leave_action(request, leave_id):
 def pending_leaves_count(request):
     count = Leave.objects.filter(status="Pending").count()
     return Response({"pending_count": count})
+
+
+# ==========================================
+# TIMETABLE
+# ==========================================
+
+def timetable_to_dict(timetable):
+    return {
+        "id": timetable.id,
+        "day": timetable.day_of_week,
+        "day_name": timetable.get_day_of_week_display(),
+        "subject": timetable.subject,
+        "section": timetable.section,
+        "branch": timetable.branch,
+        "semester": timetable.semester,
+        "start_time": timetable.start_time,
+        "end_time": timetable.end_time,
+        "teacher_id": timetable.teacher.id if timetable.teacher else None,
+        "teacher_name": timetable.teacher_name or "",
+        "room": timetable.room or "",
+        "late_after_minutes": timetable.late_after_minutes,
+        "is_active": timetable.is_active,
+    }
+
+
+@api_view(["GET", "POST"])
+def timetable_list(request):
+
+    # =========================
+    # GET ALL TIMETABLE
+    # =========================
+    if request.method == "GET":
+
+        timetables = Timetable.objects.filter(
+            is_active=True
+        ).select_related(
+            "teacher"
+        ).order_by(
+            "day_of_week",
+            "start_time"
+        )
+
+        data = [
+            timetable_to_dict(timetable)
+            for timetable in timetables
+        ]
+
+        return Response(data)
+
+    # =========================
+    # ADD TIMETABLE
+    # =========================
+
+    day = request.data.get("day")
+    subject = str(request.data.get("subject") or "").strip()
+    section = str(request.data.get("section") or "").strip()
+    branch = str(request.data.get("branch") or "").strip()
+    semester = str(request.data.get("semester") or "").strip()
+    start_time = parse_time(
+        str(request.data.get("start_time") or "")
+    )
+    end_time = parse_time(
+        str(request.data.get("end_time") or "")
+    )
+
+    teacher_id = request.data.get("teacher_id")
+    room = str(request.data.get("room") or "").strip()
+
+    if day is None:
+        return Response(
+            {"error": "Day is required"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    if not subject:
+        return Response(
+            {"error": "Subject is required"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    if not section:
+        return Response(
+            {"error": "Section is required"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    if not branch:
+        return Response(
+            {"error": "Branch is required"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    if not semester:
+        return Response(
+            {"error": "Semester is required"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    if not start_time or not end_time:
+        return Response(
+            {"error": "Start time and end time are required"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    if end_time <= start_time:
+        return Response(
+            {"error": "End time must be after start time"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    # Validate teacher
+    teacher = None
+
+    if teacher_id:
+        try:
+            teacher = User.objects.get(id=teacher_id)
+
+            profile = getattr(teacher, "profile", None)
+
+            if profile and profile.role != "teacher" and not teacher.is_superuser:
+                return Response(
+                    {"error": "Selected user is not a teacher"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+        except User.DoesNotExist:
+            return Response(
+                {"error": "Teacher not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+    # Check duplicate slot
+    if Timetable.objects.filter(
+        day_of_week=day,
+        section=section,
+        branch=branch,
+        semester=semester,
+        start_time=start_time,
+        end_time=end_time,
+        is_active=True
+    ).exists():
+
+        return Response(
+            {"error": "This timetable slot already exists"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    timetable = Timetable.objects.create(
+        day_of_week=day,
+        subject=subject,
+        section=section,
+        branch=branch,
+        semester=semester,
+        start_time=start_time,
+        end_time=end_time,
+        teacher=teacher,
+        room=room or None,
+        late_after_minutes=10,
+        is_active=True
+    )
+
+    return Response(
+        {
+            "message": "Timetable added successfully",
+            "timetable": timetable_to_dict(timetable)
+        },
+        status=status.HTTP_201_CREATED
+    )
+
+
+# ==========================================
+# TODAY'S TIMETABLE
+# ==========================================
+
+@api_view(["GET"])
+def today_timetable(request):
+
+    today = timezone.localdate()
+
+    day_number = today.weekday()
+
+    timetables = Timetable.objects.filter(
+        day_of_week=day_number,
+        is_active=True
+    ).select_related(
+        "teacher"
+    ).order_by(
+        "start_time"
+    )
+
+    data = [
+        timetable_to_dict(timetable)
+        for timetable in timetables
+    ]
+
+    return Response({
+        "date": today,
+        "day": today.strftime("%A"),
+        "timetable": data
+    })
+
+
+# ==========================================
+# CURRENT LECTURE
+# ==========================================
+
+@api_view(["GET"])
+def current_timetable(request):
+
+    now = timezone.localtime()
+    today = now.date()
+    current_time = now.time()
+
+    day_number = today.weekday()
+
+    timetable = Timetable.objects.filter(
+        day_of_week=day_number,
+        start_time__lte=current_time,
+        end_time__gt=current_time,
+        is_active=True
+    ).select_related(
+        "teacher"
+    ).first()
+
+    if not timetable:
+        return Response({
+            "active": False,
+            "message": "No lecture is running right now",
+            "date": today,
+            "time": current_time
+        })
+
+    return Response({
+        "active": True,
+        "date": today,
+        "time": current_time,
+        "lecture": timetable_to_dict(timetable)
+    })
+
+# ==========================================
+# CURRENT LECTURE
+# ==========================================
+
+def get_current_timetable():
+    now = timezone.localtime()
+
+    current_time = now.time()
+    day_number = now.weekday()
+
+    timetable = (
+        Timetable.objects
+        .filter(
+            day_of_week=day_number,
+            start_time__lte=current_time,
+            end_time__gt=current_time,
+            is_active=True
+        )
+        .select_related("teacher")
+        .first()
+    )
+
+    return timetable
+
+
+def get_or_create_current_lecture():
+    timetable = get_current_timetable()
+
+    if not timetable:
+        return None
+
+    today = timezone.localdate()
+
+    lecture, created = Lecture.objects.get_or_create(
+        subject=timetable.subject,
+        section=timetable.section,
+        date=today,
+        start_time=timetable.start_time,
+        end_time=timetable.end_time,
+        defaults={
+            "created_by": (
+                timetable.teacher.username
+                if timetable.teacher
+                else "System"
+            )
+        }
+    )
+
+    return lecture
+
+
+@api_view(["GET"])
+def current_lecture(request):
+    lecture = get_or_create_current_lecture()
+
+    if not lecture:
+        return Response({
+            "active": False,
+            "message": "No lecture is running right now."
+        })
+
+    return Response({
+        "active": True,
+        "lecture": {
+            "id": lecture.id,
+            "subject": lecture.subject,
+            "section": lecture.section,
+            "date": lecture.date,
+            "start_time": lecture.start_time,
+            "end_time": lecture.end_time,
+            "created_by": lecture.created_by,
+        }
+    })
+
+def get_attendance_status(lecture, timetable=None):
+    """
+    Decide whether a student should be marked Present or Late.
+    """
+
+    now = timezone.localtime()
+
+    lecture_start = timezone.make_aware(
+        datetime.datetime.combine(
+            lecture.date,
+            lecture.start_time
+        )
+    )
+
+    late_after_minutes = 10
+
+    if timetable:
+        late_after_minutes = timetable.late_after_minutes
+
+    late_time = lecture_start + datetime.timedelta(
+        minutes=late_after_minutes
+    )
+
+    if now <= late_time:
+        return "Present"
+
+    return "Late"
+
+# ==========================================
+# START ATTENDANCE
+# ==========================================
+
+@api_view(["POST"])
+def start_attendance(request):
+
+    lecture = get_or_create_current_lecture()
+
+    if not lecture:
+        return Response(
+            {
+                "active": False,
+                "message": "No lecture is running right now."
+            },
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    return Response(
+        {
+            "active": True,
+            "message": "Attendance started successfully",
+            "lecture": {
+                "id": lecture.id,
+                "subject": lecture.subject,
+                "section": lecture.section,
+                "date": lecture.date,
+                "start_time": lecture.start_time,
+                "end_time": lecture.end_time,
+                "created_by": lecture.created_by,
+            }
+        },
+        status=status.HTTP_200_OK
+    )
+
+@api_view(["POST"])
+def finalize_lecture(request):
+    lecture_id = request.data.get("lecture_id")
+
+    if not lecture_id:
+        return Response(
+            {"error": "lecture_id is required"},
+            status=status.HTTP_400_BAD_REQUEST
+        )
+
+    lecture = get_object_or_404(Lecture, id=lecture_id)
+
+    # Students of this section
+    students = Student.objects.filter(
+        section=lecture.section
+    )
+
+    absent_count = 0
+    leave_count = 0
+
+    for student in students:
+
+        # Already marked?
+        existing_attendance = Attendance.objects.filter(
+            student=student,
+            lecture=lecture
+        ).first()
+
+        if existing_attendance:
+            continue
+
+        # Check approved leave
+        approved_leave = Leave.objects.filter(
+            student=student,
+            date=lecture.date,
+            status="Approved"
+        ).filter(
+            Q(subject__isnull=True)
+            | Q(subject="")
+            | Q(subject="All Subjects")
+            | Q(subject=lecture.subject)
+        ).first()
+
+        if approved_leave:
+            Attendance.objects.create(
+                student=student,
+                lecture=lecture,
+                status="On Leave"
+            )
+            leave_count += 1
+
+        else:
+            Attendance.objects.create(
+                student=student,
+                lecture=lecture,
+                status="Absent"
+            )
+            absent_count += 1
+
+    return Response(
+        {
+            "message": "Lecture attendance finalized successfully",
+            "lecture_id": lecture.id,
+            "absent_count": absent_count,
+            "leave_count": leave_count
+        },
+        status=status.HTTP_200_OK
+    )

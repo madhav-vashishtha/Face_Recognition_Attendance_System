@@ -6,12 +6,14 @@ import './Dashboard.css'
 function Dashboard({ onNavigate }) {
 
   const [dashboardData, setDashboardData] = useState(null)
+  const [todayTimetable, setTodayTimetable] = useState([])
+
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
 
   // =========================
-  // Fetch Dashboard Data
+  // Fetch Dashboard + Timetable
   // =========================
 
   useEffect(() => {
@@ -23,19 +25,49 @@ function Dashboard({ onNavigate }) {
         setLoading(true)
         setError('')
 
-        const response = await fetch(
-          'http://127.0.0.1:8000/api/dashboard/'
-        )
+        const [
+          dashboardResponse,
+          timetableResponse
+        ] = await Promise.all([
 
-        if (!response.ok) {
+          fetch(
+            'http://127.0.0.1:8000/api/dashboard/'
+          ),
+
+          fetch(
+            'http://127.0.0.1:8000/api/timetable/today/'
+          ),
+
+        ])
+
+
+        if (!dashboardResponse.ok) {
           throw new Error(
             'Unable to load dashboard data.'
           )
         }
 
-        const data = await response.json()
 
-        setDashboardData(data)
+        if (!timetableResponse.ok) {
+          throw new Error(
+            'Unable to load today timetable.'
+          )
+        }
+
+
+        const dashboard =
+          await dashboardResponse.json()
+
+        const timetable =
+          await timetableResponse.json()
+
+
+        setDashboardData(dashboard)
+
+        setTodayTimetable(
+          timetable.timetable || []
+        )
+
 
       } catch (error) {
 
@@ -45,14 +77,17 @@ function Dashboard({ onNavigate }) {
         )
 
         setError(
+          error.message ||
           'Unable to load dashboard data.'
         )
+
 
       } finally {
 
         setLoading(false)
 
       }
+
     }
 
 
@@ -72,6 +107,7 @@ function Dashboard({ onNavigate }) {
         activePage="Dashboard"
         onNavigate={onNavigate}
       >
+
         <section className="page-body dashboard-body">
 
           <div className="dashboard-loading">
@@ -79,6 +115,7 @@ function Dashboard({ onNavigate }) {
           </div>
 
         </section>
+
       </AppLayout>
     )
 
@@ -96,6 +133,7 @@ function Dashboard({ onNavigate }) {
         activePage="Dashboard"
         onNavigate={onNavigate}
       >
+
         <section className="page-body dashboard-body">
 
           <div className="dashboard-error">
@@ -103,10 +141,12 @@ function Dashboard({ onNavigate }) {
           </div>
 
         </section>
+
       </AppLayout>
     )
 
   }
+
 
   // =========================
   // Format Time - 12 Hour
@@ -118,16 +158,21 @@ function Dashboard({ onNavigate }) {
       return '-'
     }
 
-    const [hours, minutes, seconds] =
-      time.split(':')
 
-    const hour = Number(hours)
+    const parts = time.split(':')
+
+    const hours = Number(parts[0])
+    const minutes = parts[1] || '00'
+    const seconds = parts[2] || '00'
+
 
     const hour12 =
-      hour % 12 || 12
+      hours % 12 || 12
+
 
     const period =
-      hour >= 12 ? 'PM' : 'AM'
+      hours >= 12 ? 'PM' : 'AM'
+
 
     return (
       `${String(hour12).padStart(2, '0')}:` +
@@ -135,7 +180,78 @@ function Dashboard({ onNavigate }) {
       `${seconds.split('.')[0]} ` +
       `${period}`
     )
+
   }
+
+
+  // =========================
+  // Convert Time To Minutes
+  // =========================
+
+  const timeToMinutes = (time) => {
+
+    if (!time) {
+      return 0
+    }
+
+
+    const [hours, minutes] =
+      time.split(':').map(Number)
+
+
+    return (
+      hours * 60 +
+      minutes
+    )
+
+  }
+
+
+  // =========================
+  // Get Lecture Status
+  // =========================
+
+  const getLectureStatus = (
+    startTime,
+    endTime
+  ) => {
+
+    const now = new Date()
+
+    const currentMinutes =
+      now.getHours() * 60 +
+      now.getMinutes()
+
+
+    const startMinutes =
+      timeToMinutes(startTime)
+
+
+    const endMinutes =
+      timeToMinutes(endTime)
+
+
+    if (
+      currentMinutes >= startMinutes &&
+      currentMinutes < endMinutes
+    ) {
+
+      return 'Live'
+
+    }
+
+
+    if (currentMinutes >= endMinutes) {
+
+      return 'Completed'
+
+    }
+
+
+    return 'Upcoming'
+
+  }
+
 
   // =========================
   // Data
@@ -144,17 +260,21 @@ function Dashboard({ onNavigate }) {
   const totalStudents =
     dashboardData.total_students
 
+
   const presentToday =
     dashboardData.present_today
+
 
   const absentToday =
     dashboardData.absent_today
 
+
   const attendancePercentage =
     dashboardData.attendance_percentage
 
+
   const attendanceRows =
-    dashboardData.today_attendance
+    dashboardData.today_attendance || []
 
 
   // =========================
@@ -162,6 +282,7 @@ function Dashboard({ onNavigate }) {
   // =========================
 
   const today = new Date()
+
 
   const formattedDate =
     today.toLocaleDateString(
@@ -173,6 +294,7 @@ function Dashboard({ onNavigate }) {
       }
     )
 
+
   const formattedDay =
     today.toLocaleDateString(
       'en-IN',
@@ -183,7 +305,7 @@ function Dashboard({ onNavigate }) {
 
 
   // =========================
-  // Stats
+  // Statistics
   // =========================
 
   const stats = [
@@ -202,6 +324,7 @@ function Dashboard({ onNavigate }) {
           viewBox="0 0 24 24"
           aria-hidden="true"
         >
+
           <path d="M16 19a4 4 0 0 0-8 0" />
 
           <circle
@@ -213,6 +336,7 @@ function Dashboard({ onNavigate }) {
           <path d="M22 19a4 4 0 0 0-5-3.9" />
 
           <path d="M2 19a4 4 0 0 1 5-3.9" />
+
         </svg>
       ),
     },
@@ -232,6 +356,7 @@ function Dashboard({ onNavigate }) {
           viewBox="0 0 24 24"
           aria-hidden="true"
         >
+
           <rect
             x="4"
             y="5"
@@ -247,6 +372,7 @@ function Dashboard({ onNavigate }) {
           <path d="M4 10h16" />
 
           <path d="m8 15 2.5 2.5L16 12" />
+
         </svg>
       ),
     },
@@ -266,9 +392,11 @@ function Dashboard({ onNavigate }) {
           viewBox="0 0 24 24"
           aria-hidden="true"
         >
+
           <path d="M6 6l12 12" />
 
           <path d="M18 6 6 18" />
+
         </svg>
       ),
     },
@@ -288,6 +416,7 @@ function Dashboard({ onNavigate }) {
           viewBox="0 0 24 24"
           aria-hidden="true"
         >
+
           <rect
             x="4"
             y="5"
@@ -309,6 +438,7 @@ function Dashboard({ onNavigate }) {
           <path d="M8 17h3" />
 
           <path d="M13 17h3" />
+
         </svg>
       ),
     },
@@ -317,25 +447,36 @@ function Dashboard({ onNavigate }) {
 
 
   // =========================
-  // Component
+  // Stat Card
   // =========================
 
   function StatCard({ stat }) {
 
     const handleClick = (event) => {
+
       event.preventDefault()
 
-      if (stat.label === 'Total Students') {
+
+      if (
+        stat.label === 'Total Students'
+      ) {
+
         onNavigate('Add Student')
+
       }
+
 
       if (
         stat.label === 'Present Today' ||
         stat.label === 'Attendance %'
       ) {
+
         onNavigate('Take Attendance')
+
       }
+
     }
+
 
     return (
 
@@ -346,8 +487,11 @@ function Dashboard({ onNavigate }) {
             `stat-card__icon stat-card__icon--${stat.tone}`
           }
         >
+
           {stat.icon}
+
         </div>
+
 
         <div className="stat-card__content">
 
@@ -361,15 +505,24 @@ function Dashboard({ onNavigate }) {
 
         </div>
 
-        <a href="#" onClick={handleClick}>
+
+        <a
+          href="#"
+          onClick={handleClick}
+        >
           {stat.link} →
         </a>
 
       </article>
 
     )
+
   }
 
+
+  // =========================
+  // Dashboard
+  // =========================
 
   return (
 
@@ -406,6 +559,7 @@ function Dashboard({ onNavigate }) {
               viewBox="0 0 24 24"
               aria-hidden="true"
             >
+
               <rect
                 x="4"
                 y="5"
@@ -423,6 +577,7 @@ function Dashboard({ onNavigate }) {
               <path d="M8 14h3" />
 
               <path d="M13 14h3" />
+
             </svg>
 
 
@@ -462,6 +617,223 @@ function Dashboard({ onNavigate }) {
 
 
         {/* =========================
+    Today's Timetable
+========================= */}
+
+        <section className="dashboard-panel today-timetable-panel">
+
+          <div className="today-timetable-header">
+
+            <div className="today-timetable-title">
+
+              <div className="today-timetable-icon">
+                <svg
+                  viewBox="0 0 24 24"
+                  aria-hidden="true"
+                >
+                  <rect
+                    x="4"
+                    y="5"
+                    width="16"
+                    height="16"
+                    rx="2"
+                  />
+
+                  <path d="M8 3v4" />
+
+                  <path d="M16 3v4" />
+
+                  <path d="M4 10h16" />
+
+                  <path d="M8 14h3" />
+
+                  <path d="M13 14h3" />
+
+                  <path d="M8 17h3" />
+
+                  <path d="M13 17h3" />
+                </svg>
+              </div>
+
+              <div>
+                <h3>
+                  Today's Timetable
+                </h3>
+
+                <p>
+                  {formattedDay}, {formattedDate}
+                </p>
+              </div>
+
+            </div>
+
+
+            <div className="today-timetable-count">
+              <strong>
+                {todayTimetable.length}
+              </strong>
+
+              <span>
+                Lectures
+              </span>
+            </div>
+
+          </div>
+
+
+          {todayTimetable.length === 0 ? (
+
+            <div className="empty-timetable">
+
+              <div className="empty-timetable-icon">
+                📅
+              </div>
+
+              <strong>
+                No lectures scheduled today
+              </strong>
+
+              <span>
+                There is no timetable available for today.
+              </span>
+
+            </div>
+
+          ) : (
+
+            <div className="timetable-list">
+
+              {todayTimetable.map((lecture) => {
+
+                const lectureStatus =
+                  getLectureStatus(
+                    lecture.start_time,
+                    lecture.end_time
+                  )
+
+
+                return (
+
+                  <div
+                    className={
+                      `timetable-row ${lectureStatus === 'Live'
+                        ? 'timetable-row--live'
+                        : ''
+                      }`
+                    }
+                    key={lecture.id}
+                  >
+
+                    {/* Time */}
+
+                    <div className="timetable-time">
+
+                      <strong>
+                        {formatTime(
+                          lecture.start_time
+                        )}
+                      </strong>
+
+                      <span>
+                        to
+                      </span>
+
+                      <strong>
+                        {formatTime(
+                          lecture.end_time
+                        )}
+                      </strong>
+
+                    </div>
+
+
+                    {/* Subject */}
+
+                    <div className="timetable-subject">
+
+                      <strong>
+                        {lecture.subject}
+                      </strong>
+
+                      <span>
+                        Section {lecture.section}
+
+                        {lecture.room
+                          ? ` • Room ${lecture.room}`
+                          : ''
+                        }
+                      </span>
+
+                    </div>
+
+
+                    {/* Teacher */}
+
+                    <div className="timetable-teacher">
+
+                      <span>
+                        Faculty
+                      </span>
+
+                      <strong>
+                        {lecture.teacher_name ||
+                          'Not specified'}
+                      </strong>
+
+                    </div>
+
+
+                    {/* Status */}
+
+                    <div
+                      className={
+                        `timetable-status timetable-status--${lectureStatus.toLowerCase()}`
+                      }
+                    >
+
+                      {lectureStatus === 'Live' && (
+                        <span className="live-dot"></span>
+                      )}
+
+                      {lectureStatus}
+
+                    </div>
+
+
+                    {/* Action */}
+
+                    <div className="timetable-action">
+
+                      {lectureStatus === 'Live' && (
+
+                        <button
+                          type="button"
+                          className="timetable-start-btn"
+                          onClick={() => {
+                            onNavigate('Take Attendance')
+                          }}
+                        >
+                          Start Attendance →
+                        </button>
+
+                      )}
+
+                    </div>
+
+                  </div>
+
+                )
+
+              })}
+
+            </div>
+
+          )}
+
+        </section>
+
+
+        {/* =========================
             Dashboard Panels
         ========================= */}
 
@@ -476,6 +848,7 @@ function Dashboard({ onNavigate }) {
             className={
               'dashboard-panel dashboard-panel--table'
             }
+            style={{marginTop:'1rem'}}
           >
 
             <div className="panel-title">
@@ -562,9 +935,17 @@ function Dashboard({ onNavigate }) {
                         </td>
 
                         <td>
-                          {formatTime(attendance.start_time)}
+
+                          {formatTime(
+                            attendance.start_time
+                          )}
+
                           {' - '}
-                          {formatTime(attendance.end_time)}
+
+                          {formatTime(
+                            attendance.end_time
+                          )}
+
                         </td>
 
                         <td>
@@ -599,6 +980,7 @@ function Dashboard({ onNavigate }) {
             className={
               'dashboard-panel dashboard-panel--overview'
             }
+            style={{marginTop:'1rem'}}
           >
 
             <h3>
@@ -644,11 +1026,14 @@ function Dashboard({ onNavigate }) {
                   ></i>
 
                   <span>
+
                     Present -
                     <br />
+
                     {presentToday} (
                     {attendancePercentage}
                     %)
+
                   </span>
 
                 </p>
@@ -664,16 +1049,21 @@ function Dashboard({ onNavigate }) {
                   ></i>
 
                   <span>
+
                     Absent -
                     <br />
+
                     {absentToday} (
+
                     {totalStudents > 0
                       ? (
                         100 -
                         attendancePercentage
                       ).toFixed(2)
                       : '0.00'}
+
                     %)
+
                   </span>
 
                 </p>
@@ -693,5 +1083,6 @@ function Dashboard({ onNavigate }) {
   )
 
 }
+
 
 export default Dashboard
